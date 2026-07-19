@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = () => ({
+    port: parseInt(process.env.PORT || '3000', 10),
+    database: {
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT || '5432', 10),
+    },
+});
+//# sourceMappingURL=configuration.js.map

@@ -1,0 +1,72 @@
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ─── رنگهای اصلی برند ─────────────────────────────────────── */
+    --color-white: 0 0% 100%;
+    --color-background: 40 20% 97%;        /* #F8F7F4 */
+    --color-gold: 43 56% 55%;              /* #C9A84C */
+    --color-gold-hover: 43 60% 44%;        /* #B8962E */
+    --color-gold-light: 43 50% 90%;        /* #F5EDD6 */
+    --color-gold-dark: 43 75% 30%;         /* #8B6914 */
+
+    --color-surface: 0 0% 100%;
+    --color-border: 40 15% 89%;            /* #E8E4DB */
+    --color-border-gold: 43 56% 55%;
+
+    --color-text-primary: 30 15% 9%;       /* #1A1814 */
+    --color-text-secondary: 30 8% 41%;     /* #6B6356 */
+    --color-text-muted: 30 8% 59%;         /* #9E9285 */
+
+    --color-success: 145 47% 33%;          /* #2D7A4F */
+    --color-danger: 6 56% 47%;             /* #C0392B */
+    --color-warning: 28 80% 52%;           /* #E67E22 */
+
+    /* ─── Shadow ────────────────────────────────────────────────── */
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-elevated: 0 4px 24px rgba(0,0,0,0.10);
+    --shadow-gold-glow: 0 0 0 3px rgba(201,168,76,0.25);
+
+    /* ─── Radius ────────────────────────────────────────────────── */
+    --radius-button: 6px;
+    --radius-card: 12px;
+    --radius-modal: 16px;
+    --radius-badge: 4px;
+    --radius-pill: 999px;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-text-primary;
+    font-family: 'Vazirmatn', 'Inter', sans-serif;
+    font-feature-settings: 'ss01' on, 'ss02' on;
+  }
+
+  /* اعداد در رابط کاربری همیشه لاتین باشند مگر صراحتاً فارسی خواسته شود */
+  .num-fa {
+    font-feature-settings: 'ss03' on;
+  }
+}
+
+@layer components {
+  /* خط طلایی کنار عنوان بخشها — در تمام صفحات استفاده میشود */
+  .section-heading {
+    @apply relative pr-4 mb-2;
+  }
+  .section-heading::before {
+    content: '';
+    @apply absolute right-0 top-1 bottom-1 w-1 bg-gold rounded-full;
+  }
+}

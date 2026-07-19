@@ -1,0 +1,92 @@
+export const ENDPOINTS = {
+  AUTH: {
+    REGISTER: '/auth/register',
+    LOGIN: '/auth/login',
+    LOGOUT: '/auth/logout',
+    REFRESH: '/auth/refresh',
+    ME: '/auth/me',
+  },
+  PRODUCTS: {
+    LIST: '/products',
+    FEATURED: '/products/featured',
+    NEW_ARRIVALS: '/products/new-arrivals',
+    BEST_SELLERS: '/products/best-sellers',
+    DETAIL: (slug: string) => `/products/${slug}`,
+    RELATED: (slug: string) => `/products/${slug}/related`,
+  },
+  CATEGORIES: {
+    TREE: '/categories',
+    DETAIL: (slug: string) => `/categories/${slug}`,
+  },
+  BRANDS: {
+    LIST: '/brands',
+    DETAIL: (slug: string) => `/brands/${slug}`,
+  },
+  SEARCH: {
+    QUERY: '/search',
+    SUGGESTIONS: '/search/suggestions',
+  },
+  ACCOUNT: {
+    DASHBOARD: '/users/dashboard',
+    PROFILE: '/users/profile',
+    AVATAR: '/users/profile/avatar',
+    CHANGE_PASSWORD: '/users/change-password',
+  },
+  ADDRESSES: {
+    LIST: '/addresses',
+    CREATE: '/addresses',
+    UPDATE: (id: string) => `/addresses/${id}`,
+    DELETE: (id: string) => `/addresses/${id}`,
+    SET_DEFAULT: (id: string) => `/addresses/${id}/set-default`,
+  },
+  WISHLIST: {
+    LIST: '/wishlist',
+    TOGGLE: (productId: string) => `/wishlist/${productId}`,
+    CHECK: (productId: string) => `/wishlist/${productId}/check`,
+    REMOVE: (productId: string) => `/wishlist/${productId}`,
+  },
+  NOTIFICATIONS: {
+    LIST: '/notifications',
+    MARK_ALL_READ: '/notifications/read-all',
+    MARK_READ: (id: string) => `/notifications/${id}/read`,
+  },
+  ADMIN: {
+    DASHBOARD: {
+      STATS: '/admin/dashboard/stats',
+      REVENUE: '/admin/dashboard/revenue',
+      TOP_PRODUCTS: '/admin/dashboard/top-products',
+      LOW_STOCK: '/admin/dashboard/low-stock',
+      RECENT_ORDERS: '/admin/dashboard/recent-orders',
+    },
+    PRODUCTS: {
+      LIST: '/admin/products',
+      DETAIL: (id: string) => `/admin/products/${id}`,
+      CREATE: '/admin/products',
+      UPDATE: (id: string) => `/admin/products/${id}`,
+      DELETE: (id: string) => `/admin/products/${id}`,
+      UPLOAD_IMAGE: (id: string) => `/admin/products/${id}/images`,
+      DELETE_IMAGE: (id: string, imageId: string) => `/admin/products/${id}/images/${imageId}`,
+      REORDER_IMAGES: (id: string) => `/admin/products/${id}/images/reorder`,
+      BULK_STATUS: '/admin/products/bulk-status',
+    },
+    ORDERS: {
+      LIST: '/admin/orders',
+      DETAIL: (id: string) => `/admin/orders/${id}`,
+      UPDATE_STATUS: (id: string) => `/admin/orders/${id}/status`,
+    },
+    CUSTOMERS: {
+      LIST: '/admin/customers',
+      DETAIL: (id: string) => `/admin/customers/${id}`,
+      TOGGLE_ACTIVE: (id: string) => `/admin/customers/${id}/toggle-active`,
+    },
+    CATEGORIES: '/admin/categories',
+    BRANDS: '/admin/brands',
+    COUPONS: '/admin/coupons',
+    REVIEWS: {
+      LIST: '/admin/reviews',
+      APPROVE: (id: string) => `/admin/reviews/${id}/approve`,
+      REJECT: (id: string) => `/admin/reviews/${id}/reject`,
+      DELETE: (id: string) => `/admin/reviews/${id}`,
+    },
+  },
+} as const;

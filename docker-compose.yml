@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: toolstore_db
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_DB: toolstore
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./toolstore-backend
+      dockerfile: Dockerfile
+    container_name: toolstore_backend
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootpassword
+      - DB_NAME=toolstore
+      - JWT_SECRET=toolstore_super_secret_key_2024
+      - JWT_EXPIRES_IN=1h
+      - JWT_REFRESH_SECRET=toolstore_refresh_secret_key_2024
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - PORT=3000
+      - DB_SYNCHRONIZE=true
+    depends_on:
+      - db
+    # Override CMD to run in watch mode for development
+    command: npm run start:dev
+    volumes:
+      # Mount src to enable hot-reloading for backend
+      - ./toolstore-backend/src:/usr/src/app/src
+      # Mount the upload directory to persist images
+      - ./toolstore-backend/uploads:/usr/src/app/uploads
+
+  frontend:
+    build:
+      context: ./toolstore-frontend
+      dockerfile: Dockerfile
+    container_name: toolstore_frontend
+    restart: unless-stopped
+    ports:
+      - '5173:5173'
+    environment:
+      - VITE_API_URL=http://localhost:3000/api
+      - VITE_API_BASE_URL=http://localhost:3000/api
+    depends_on:
+      - backend
+    # We use volumes to enable hot-reloading in frontend during development
+    volumes:
+      - ./toolstore-frontend/src:/usr/src/app/src
+      - ./toolstore-frontend/public:/usr/src/app/public
+
+volumes:
+  postgres_data:
