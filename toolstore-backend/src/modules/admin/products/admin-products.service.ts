@@ -7,6 +7,7 @@ import { ProductSpec } from '../../products/entities/product-spec.entity';
 import { ProductVariant } from '../../products/entities/product-variant.entity';
 import slugify from 'slugify';
 import { paginate } from '../../../common/dto/pagination.dto';
+import { PAGINATION } from '../../../common/constants/app.constants';
 
 export interface AdminProductQuery {
   page?: number;
@@ -65,8 +66,8 @@ export class AdminProductsService {
 
     qb.orderBy('product.createdAt', 'DESC');
 
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || PAGINATION.MAX_LIMIT;
     const [items, total] = await qb.skip((page - 1) * limit).take(limit).getManyAndCount();
 
     return paginate(items, total, page, limit);

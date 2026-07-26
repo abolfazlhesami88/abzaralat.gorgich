@@ -29,7 +29,7 @@ export class Product extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ name: 'short_description', length: 500, nullable: true })
+  @Column({ name: 'short_description', length: 2000, nullable: true })
   shortDescription: string;
 
   @Column({ type: 'bigint' })

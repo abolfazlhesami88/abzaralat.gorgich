@@ -16,7 +16,7 @@ export function AdminProductsPage() {
   const fetchProducts = async (q = '') => {
     try {
       setIsLoading(true);
-      const { data } = await apiClient.get(`${ENDPOINTS.ADMIN.PRODUCTS.LIST}?search=${q}`);
+      const { data } = await apiClient.get(`${ENDPOINTS.ADMIN.PRODUCTS.LIST}?search=${q}&limit=500`);
       setProducts(data.data.items || []);
     } catch (error) {
       console.error('Error fetching products', error);

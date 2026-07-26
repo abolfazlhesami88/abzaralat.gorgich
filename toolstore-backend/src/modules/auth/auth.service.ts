@@ -65,7 +65,7 @@ export class AuthService {
     res.clearCookie('refresh_token', {
       httpOnly: true,
       secure: this.configService.get('NODE_ENV') === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       path: '/api/auth/refresh',
     });
 
@@ -144,7 +144,7 @@ export class AuthService {
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: this.configService.get('NODE_ENV') === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 روز به ms
       path: '/api/auth/refresh',
     });

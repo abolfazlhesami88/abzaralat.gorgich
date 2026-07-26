@@ -14,6 +14,7 @@ const colorMap = {
   success: 'bg-success/10 text-success',
   danger: 'bg-danger/10 text-danger',
   blue: 'bg-blue-50 text-blue-600',
+  primary: 'bg-primary/10 text-primary',
 };
 
 export function StatCard({ title, value, icon: Icon, trend, color = 'gold' }: StatCardProps) {

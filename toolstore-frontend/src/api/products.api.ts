@@ -12,6 +12,14 @@ export const productsApi = {
     return data.data;
   },
 
+  all: async () => {
+    const { data } = await apiClient.get<ApiResponse<PaginatedData<Product>>>(
+      ENDPOINTS.PRODUCTS.LIST,
+      { params: { limit: 500 } },
+    );
+    return data.data.items;
+  },
+
   getBySlug: async (slug: string) => {
     const { data } = await apiClient.get<ApiResponse<Product>>(
       ENDPOINTS.PRODUCTS.DETAIL(slug),

@@ -26,6 +26,8 @@ export class DashboardService {
       newCustomersToday,
       lowStockCount,
       pendingOrders,
+      totalProducts,
+      activeProducts,
     ] = await Promise.all([
       this.orderRepo.count({
         where: { createdAt: today as any },
@@ -48,6 +50,8 @@ export class DashboardService {
         .andWhere('p.stock > 0')
         .getCount(),
       this.orderRepo.count({ where: { status: OrderStatus.PENDING } }),
+      this.productRepo.count(),
+      this.productRepo.count({ where: { status: 'active' as any } }),
     ]);
 
     return {
@@ -57,6 +61,8 @@ export class DashboardService {
       newCustomersToday,
       lowStockCount,
       pendingOrders,
+      totalProducts,
+      activeProducts,
     };
   }
 

@@ -16,6 +16,12 @@ export const useProduct = (slug: string) =>
     enabled: !!slug,
   });
 
+export const useAllProducts = () =>
+  useQuery({
+    queryKey: ['products', 'all'],
+    queryFn: () => productsApi.all(),
+  });
+
 export const useFeaturedProducts = () =>
   useQuery({ queryKey: ['products', 'featured'], queryFn: productsApi.featured });
 
