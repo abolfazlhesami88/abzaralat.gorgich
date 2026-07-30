@@ -230,7 +230,8 @@ export function AdminDashboard() {
             </div>
           </div>
         </div>
-      )}
+      </>
+    )}
 
       {/* تمام محصولات */}
       <div className="bg-white border border-border rounded-card p-4">
