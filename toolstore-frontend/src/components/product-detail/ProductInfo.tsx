@@ -23,27 +23,30 @@ export function ProductInfo({ product, onAddToCart, isAddingToCart }: ProductInf
   const effectiveStock = selectedVariant?.stock ?? product.stock;
 
   return (
-    <div className="space-y-5">
-      <div>
+    <div className="space-y-6">
+      <div className="space-y-2">
         {product.brand && (
-          <span className="text-sm font-medium text-gold-dark uppercase tracking-wide">
+          <span className="inline-block bg-gold-light/30 text-gold-dark text-xs font-semibold px-3 py-1 rounded-badge tracking-wider uppercase border border-gold/20">
             {product.brand.name}
           </span>
         )}
-        <h1 className="font-display text-h1 text-text-primary mt-1">{product.name}</h1>
-        <p className="text-xs text-text-muted mt-1">کد محصول: {product.sku}</p>
+        <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-text-primary leading-tight">
+          {product.name}
+        </h1>
+        <p className="text-xs text-text-muted">کد محصول: {product.sku}</p>
       </div>
 
       {product.reviewCount > 0 && (
         <RatingStars rating={product.averageRating} reviewCount={product.reviewCount} />
       )}
 
-      <PriceDisplay price={effectivePrice} compareAtPrice={product.compareAtPrice} size="lg" />
-
-      <StockStatus stock={effectiveStock} />
+      <div className="p-4 bg-surface rounded-card border border-border/70 shadow-sm flex items-center justify-between flex-wrap gap-3">
+        <PriceDisplay price={effectivePrice} compareAtPrice={product.compareAtPrice} size="lg" />
+        <StockStatus stock={effectiveStock} />
+      </div>
 
       {product.shortDescription && (
-        <p className="text-text-secondary leading-relaxed">{product.shortDescription}</p>
+        <p className="text-text-secondary leading-relaxed text-sm sm:text-base">{product.shortDescription}</p>
       )}
 
       {product.variants && product.variants.length > 0 && (
@@ -58,19 +61,20 @@ export function ProductInfo({ product, onAddToCart, isAddingToCart }: ProductInf
         <QuantitySelector quantity={quantity} onChange={setQuantity} max={effectiveStock} />
 
         <button
+          type="button"
           onClick={() => onAddToCart(product.id, selectedVariant?.id ?? null, quantity)}
           disabled={effectiveStock === 0 || isAddingToCart}
-          className="flex-1 flex items-center justify-center gap-2 bg-gold hover:bg-gold-hover text-text-primary font-bold py-3.5 rounded-button disabled:opacity-50 transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 bg-gold hover:bg-gold-hover text-text-primary font-bold py-3.5 px-6 rounded-button shadow-gold-glow hover:shadow-lg transition-all duration-200 disabled:opacity-50 active:scale-[0.99]"
         >
           <ShoppingCart size={18} />
-          {effectiveStock === 0 ? 'ناموجود' : isAddingToCart ? 'در حال افزودن...' : 'افزودن به سبد خرید'}
+          {effectiveStock === 0 ? 'موجودی تمام شده' : isAddingToCart ? 'در حال افزودن...' : 'افزودن به سبد خرید'}
         </button>
 
-        <button className="w-12 h-12 flex items-center justify-center border border-border rounded-button hover:border-gold transition-colors">
+        <button type="button" aria-label="افزودن به علاقه مندی ها" className="w-12 h-12 flex items-center justify-center border border-border/80 rounded-button bg-surface hover:border-gold hover:text-gold-dark hover:bg-gold-light/20 transition-all duration-200">
           <Heart size={18} />
         </button>
 
-        <button className="w-12 h-12 flex items-center justify-center border border-border rounded-button hover:border-gold transition-colors">
+        <button type="button" aria-label="اشتراک گذاری" className="w-12 h-12 flex items-center justify-center border border-border/80 rounded-button bg-surface hover:border-gold hover:text-gold-dark hover:bg-gold-light/20 transition-all duration-200">
           <Share2 size={18} />
         </button>
       </div>

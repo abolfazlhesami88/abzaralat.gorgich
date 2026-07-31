@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowRight, Upload, X } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { ENDPOINTS } from '../../api/endpoints';
+import { getMediaUrl } from '../../utils/media';
 
 export function AdminProductFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -251,9 +252,7 @@ export function AdminProductFormPage() {
                   <p className="text-sm text-text-muted">تصویری آپلود نشده است.</p>
                 ) : (
                   images.map(img => {
-                    const imageUrl = img.url.startsWith('blob:') || img.url.startsWith('http')
-                      ? img.url
-                      : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace('/api', '') + img.url;
+                    const imageUrl = getMediaUrl(img.url);
                     return (
                       <div key={img.id} className="relative group w-24 h-24 border border-border rounded bg-background p-1">
                         <img src={imageUrl} alt="product" className="w-full h-full object-contain" />

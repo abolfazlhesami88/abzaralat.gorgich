@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useDebounce } from '../../hooks/useDebounce';
 import { searchApi } from '../../api/search.api';
 import { formatPrice } from '../../utils/formatPrice';
+import { getMediaUrl } from '../../utils/media';
 
 export function SearchBar() {
   const [query, setQuery] = useState('');
@@ -40,30 +41,47 @@ export function SearchBar() {
   return (
     <div ref={wrapperRef} className="relative w-full">
       <form onSubmit={handleSubmit} className="relative">
-        <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted" />
         <input
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setIsOpen(true); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setIsOpen(true);
+          }}
           onFocus={() => setIsOpen(true)}
           placeholder="جستجوی ابزار، برند یا کد محصول..."
-          className="w-full h-11 pr-10 pl-4 rounded-pill border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold"
+          className="w-full h-11 pr-11 pl-4 rounded-full border border-[#ece4d3] bg-[#faf7f2] text-[#221c12] text-sm placeholder:text-[#8c8272]/70 shadow-[inset_0_2px_4px_rgba(34,28,18,0.04)] focus:outline-none focus:border-[#c79a4b] focus:bg-white focus:shadow-[0_0_14px_rgba(199,154,75,0.25)] transition-all duration-200"
         />
+        <button
+          type="submit"
+          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#c79a4b] hover:text-[#a67d34] transition-colors"
+          aria-label="جستجو"
+        >
+          <Search size={19} />
+        </button>
       </form>
 
       {isOpen && suggestions && suggestions.length > 0 && (
-        <div className="absolute top-full mt-2 w-full bg-white border border-border rounded-card shadow-elevated overflow-hidden z-50 animate-fade-in">
+        <div className="absolute top-full mt-2 w-full bg-[#fdfbf7] border border-[#ece4d3] rounded-2xl shadow-[0_10px_30px_rgba(34,28,18,0.08)] overflow-hidden z-50 animate-fade-in">
           {suggestions.map((item) => (
             <button
               key={item.id}
-              onClick={() => { navigate(`/products/${item.slug}`); setIsOpen(false); setQuery(''); }}
-              className="w-full flex items-center gap-3 p-3 hover:bg-gold-light/40 transition-colors text-right"
+              onClick={() => {
+                navigate(`/products/${item.slug}`);
+                setIsOpen(false);
+                setQuery('');
+              }}
+              className="w-full flex items-center gap-3 p-3 hover:bg-[#f4efe4] transition-colors text-right border-b border-[#ece4d3]/60 last:border-0"
             >
               {item.image && (
-                <img src={import.meta.env.VITE_API_BASE_URL?.replace('/api', '') + item.image} alt={item.name} className="w-10 h-10 rounded object-cover" />
+                <img
+                  src={getMediaUrl(item.image)}
+                  alt={item.name}
+                  className="w-10 h-10 rounded-lg object-cover border border-[#ece4d3]"
+                />
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{item.name}</p>
-                <p className="text-xs text-text-secondary">{formatPrice(item.price)} تومان</p>
+                <p className="text-sm font-semibold text-[#221c12] truncate">{item.name}</p>
+                <p className="text-xs font-medium text-[#c79a4b] mt-0.5">{formatPrice(item.price)} تومان</p>
               </div>
             </button>
           ))}

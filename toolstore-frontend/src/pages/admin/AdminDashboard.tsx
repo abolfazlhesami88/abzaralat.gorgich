@@ -7,6 +7,7 @@ import { RevenueChart } from '../../components/admin/RevenueChart';
 import { apiClient } from '../../api/client';
 import { ENDPOINTS } from '../../api/endpoints';
 import { formatPrice } from '../../utils/formatPrice';
+import { getMediaUrl } from '../../utils/media';
 import { Link } from 'react-router-dom';
 
 export function AdminDashboard() {
@@ -94,7 +95,7 @@ export function AdminDashboard() {
             title="کل محصولات" 
             value={stats.totalProducts} 
             icon={Package} 
-            color="primary" 
+            color="gold" 
             trend={{ value: 12, label: "از ماه گذشته" }} 
           />
           <StatCard 
@@ -247,7 +248,7 @@ export function AdminDashboard() {
               <div className="flex gap-3">
                 <div className="w-12 h-12 bg-gold-light/30 rounded overflow-hidden shrink-0">
                   {product.images?.length > 0 ? (
-                    <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover" />
+                    <img src={getMediaUrl(product.images[0].url)} alt={product.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-text-muted text-xs">بدون عکس</div>
                   )}

@@ -14,8 +14,8 @@ export async function seedUsers(dataSource: DataSource) {
 
   const users = [
     {
-      email: 'admin@toolstore.ir',
-      passwordHash: await bcrypt.hash('Admin@1234', 12),
+      email: 'admin@admin.com',
+      passwordHash: await bcrypt.hash('admin', 12),
       firstName: 'مدیر',
       lastName: 'سیستم',
       role: UserRole.ADMIN,
@@ -53,7 +53,7 @@ export async function seedUsers(dataSource: DataSource) {
   await repo.query(`
     INSERT INTO users (id, email, password_hash, first_name, last_name, phone, role, is_active, created_at, updated_at)
     VALUES
-      (gen_random_uuid(), 'admin@toolstore.ir', '${users[0].passwordHash}', 'مدیر', 'سیستم', NULL, 'admin', true, NOW(), NOW()),
+      (gen_random_uuid(), 'admin@admin.com', '${users[0].passwordHash}', 'مدیر', 'سیستم', NULL, 'admin', true, NOW(), NOW()),
       (gen_random_uuid(), 'ali@example.com', '${users[1].passwordHash}', 'علی', 'احمدی', '09121234567', 'customer', true, NOW(), NOW()),
       (gen_random_uuid(), 'sara@example.com', '${users[2].passwordHash}', 'سارا', 'محمدی', '09351234567', 'customer', true, NOW(), NOW()),
       (gen_random_uuid(), 'reza@example.com', '${users[3].passwordHash}', 'رضا', 'کریمی', '09011234567', 'customer', true, NOW(), NOW())

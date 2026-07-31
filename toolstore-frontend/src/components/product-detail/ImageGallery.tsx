@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ProductImage } from '../../types/product.types';
-import { cn } from '../../utils/cn';
+import { getMediaUrl } from '../../utils/media';
 
 export function ImageGallery({ images }: { images: ProductImage[] }) {
   const sorted = [...images].sort((a) => (a.isPrimary ? -1 : 1));
@@ -8,32 +8,37 @@ export function ImageGallery({ images }: { images: ProductImage[] }) {
   const active = sorted[activeIndex];
 
   if (!sorted.length) {
-    return <div className="aspect-square bg-gold-light/30 rounded-card flex items-center justify-center text-text-muted">بدون تصویر</div>;
+    return (
+      <div style={{ aspectRatio: '1/1', background: 'var(--p-bg-soft)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--p-gray)', fontSize: 14 }}>
+        بدون تصویر
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-3">
-      <div className="aspect-square rounded-card overflow-hidden bg-gold-light/20 border border-border group">
+    <div>
+      {/* تصویر اصلی */}
+      <div style={{ aspectRatio: '1/1', borderRadius: 8, overflow: 'hidden', background: 'var(--p-bg)', border: '1px solid var(--p-line)' }}>
         <img
-          src={import.meta.env.VITE_API_BASE_URL?.replace('/api', '') + active.url}
-          alt={active.altText ?? ''}
-          className="w-full h-full object-contain p-6 transition-transform duration-300 group-hover:scale-110"
+          key={active?.id ?? activeIndex}
+          src={getMediaUrl(active?.url)}
+          alt={active?.altText ?? ''}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 24 }}
         />
       </div>
 
+      {/* نقطه‌های تعویض */}
       {sorted.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto">
-          {sorted.map((img, i) => (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
+          {sorted.map((_, i) => (
             <button
-              key={img.id}
+              key={i}
+              type="button"
+              className="p-dot"
+              data-active={String(i === activeIndex)}
               onClick={() => setActiveIndex(i)}
-              className={cn(
-                'w-16 h-16 shrink-0 rounded-button overflow-hidden border-2 transition-colors',
-                i === activeIndex ? 'border-gold' : 'border-border opacity-70 hover:opacity-100',
-              )}
-            >
-              <img src={import.meta.env.VITE_API_BASE_URL?.replace('/api', '') + img.url} alt="" className="w-full h-full object-cover" />
-            </button>
+              aria-label={`تصویر ${i + 1}`}
+            />
           ))}
         </div>
       )}

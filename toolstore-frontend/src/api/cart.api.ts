@@ -31,6 +31,11 @@ export const cartApi = {
     return data.data;
   },
 
+  removeCoupon: async (sessionId?: string) => {
+    const { data } = await apiClient.delete<ApiResponse<CartSummary>>('/cart/coupon', withSession(sessionId));
+    return data.data;
+  },
+
   mergeGuest: async (sessionId: string) => {
     await apiClient.post('/cart/merge-guest', { sessionId });
   },

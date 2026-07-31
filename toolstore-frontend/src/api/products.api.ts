@@ -5,9 +5,13 @@ import type { Product, ProductQueryParams } from '../types/product.types';
 
 export const productsApi = {
   list: async (params: ProductQueryParams) => {
+    // پارامترهای false/undefined حذف می‌شوند تا بکاند آن‌ها را اشتباه parse نکند
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== false && v !== undefined && v !== null)
+    );
     const { data } = await apiClient.get<ApiResponse<PaginatedData<Product>>>(
       ENDPOINTS.PRODUCTS.LIST,
-      { params },
+      { params: cleanParams },
     );
     return data.data;
   },

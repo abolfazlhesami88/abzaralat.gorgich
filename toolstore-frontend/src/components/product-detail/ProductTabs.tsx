@@ -2,40 +2,63 @@ import { useState } from 'react';
 import type { Product } from '../../types/product.types';
 import { SpecsTable } from './SpecsTable';
 import { ReviewsSection } from './ReviewsSection';
-import { cn } from '../../utils/cn';
 
-const TABS = [
-  { id: 'description', label: 'توضیحات' },
-  { id: 'specs', label: 'مشخصات فنی' },
-  { id: 'reviews', label: 'نظرات کاربران' },
-];
 
 export function ProductTabs({ product }: { product: Product }) {
   const [activeTab, setActiveTab] = useState('description');
 
+  const tabs = [
+    { id: 'description', label: 'توضیحات' },
+    { id: 'specs', label: 'مشخصات فنی' },
+    { id: 'reviews', label: `نظرات${product.reviewCount ? ` (${product.reviewCount})` : ''}` },
+  ];
+
   return (
-    <div className="mt-12">
-      <div className="flex gap-1 border-b border-border overflow-x-auto">
-        {TABS.map((tab) => (
+    <div style={{ marginTop: 48 }}>
+      {/* لیست تب‌ها */}
+      <div className="p-tabs-list">
+        {tabs.map((tab) => (
           <button
             key={tab.id}
+            type="button"
+            className="p-tab-btn"
+            data-active={String(activeTab === tab.id)}
             onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'px-5 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors',
-              activeTab === tab.id
-                ? 'border-gold text-text-primary'
-                : 'border-transparent text-text-secondary hover:text-text-primary',
-            )}
           >
             {tab.label}
           </button>
         ))}
       </div>
 
-      <div className="py-8">
+      {/* محتوای تب‌ها */}
+      <div style={{ paddingTop: 32 }}>
         {activeTab === 'description' && (
-          <div className="prose prose-sm max-w-none text-text-secondary leading-relaxed whitespace-pre-wrap">
-            {product.description ?? 'توضیحاتی برای این محصول ثبت نشده است.'}
+          <div>
+            {/* کارت‌های ویژگی */}
+            {product.specs && product.specs.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
+                {product.specs.slice(0, 3).map((spec) => (
+                  <div key={spec.id} className="p-feature-card">
+                    <div style={{ fontSize: 12, color: 'var(--p-gray)', marginBottom: 4 }}>{spec.specKey}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--p-ink)' }}>{spec.specValue}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* جمله درشت با خط accent */}
+            {product.shortDescription && (
+              <div style={{ display: 'flex', gap: 16, marginBottom: 32, padding: '0 16px', borderRight: '3px solid var(--p-accent)' }}>
+                <p style={{ fontSize: 18, fontWeight: 500, color: 'var(--p-ink)', lineHeight: 1.7, margin: 0 }}>
+                  {product.shortDescription}
+                </p>
+              </div>
+            )}
+
+            {/* توضیح کامل */}
+            <div style={{ fontSize: 14, lineHeight: '1.9', color: 'var(--p-gray)', whiteSpace: 'pre-wrap' }}>
+              {product.description ?? 'توضیحاتی برای این محصول ثبت نشده است.'}
+            </div>
           </div>
         )}
 

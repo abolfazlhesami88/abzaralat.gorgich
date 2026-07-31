@@ -13,9 +13,9 @@ export function ActiveFilterChips({ filters, onRemove }: ActiveFilterChipsProps)
   if (filters.categorySlug) chips.push({ key: 'category', label: `دسته: ${filters.categorySlug}` });
   if (filters.brandSlug) chips.push({ key: 'brand', label: `برند: ${filters.brandSlug}` });
   if (filters.minPrice || filters.maxPrice) {
-    const min = filters.minPrice ? formatPrice(filters.minPrice * 10) : '0';
-    const max = filters.maxPrice ? formatPrice(filters.maxPrice * 10) : 'بی نهایت';
-    chips.push({ key: 'price', label: `قیمت: ${min} تا ${max}` });
+    const min = filters.minPrice ? formatPrice(filters.minPrice) : '0';
+    const max = filters.maxPrice ? formatPrice(filters.maxPrice) : 'بی‌نهایت';
+    chips.push({ key: 'price', label: `قیمت: ${min} – ${max}` });
   }
   if (filters.minRating) chips.push({ key: 'minRating', label: `امتیاز: ${toPersianDigits(filters.minRating)}+` });
   if (filters.inStockOnly) chips.push({ key: 'inStock', label: 'فقط موجودها' });
@@ -23,11 +23,11 @@ export function ActiveFilterChips({ filters, onRemove }: ActiveFilterChipsProps)
   if (chips.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 mb-4">
+    <div className="flex flex-wrap gap-1.5 mb-4">
       {chips.map((chip) => (
         <span
           key={chip.key}
-          className="flex items-center gap-1.5 px-3 py-1 bg-gold-light/50 text-gold-dark text-xs font-medium rounded-pill"
+          className="inline-flex items-center gap-1 px-2.5 py-1 bg-gold-light/60 text-gold-dark text-xs font-medium rounded-full border border-gold/20"
         >
           {chip.label}
           <button
@@ -39,9 +39,10 @@ export function ActiveFilterChips({ filters, onRemove }: ActiveFilterChipsProps)
                 onRemove(chip.key, undefined);
               }
             }}
-            className="hover:text-danger transition-colors"
+            className="w-3.5 h-3.5 rounded-full flex items-center justify-center hover:bg-gold/30 transition-colors ml-0.5"
+            aria-label={`حذف فیلتر ${chip.label}`}
           >
-            <X size={14} />
+            <X size={10} />
           </button>
         </span>
       ))}

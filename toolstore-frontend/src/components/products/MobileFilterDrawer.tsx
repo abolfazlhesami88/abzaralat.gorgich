@@ -6,7 +6,7 @@ interface MobileFilterDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   filters: ProductQueryParams;
-  onUpdateFilter: (key: string, value: any) => void;
+  onUpdateFilter: (key: string, value: string | number | boolean | undefined) => void;
   onClearAll: () => void;
 }
 

@@ -6,6 +6,7 @@ import type { Column } from '../../components/admin';
 import { apiClient } from '../../api/client';
 import { ENDPOINTS } from '../../api/endpoints';
 import { formatPrice } from '../../utils/formatPrice';
+import { getMediaUrl } from '../../utils/media';
 
 export function AdminProductsPage() {
   const [products, setProducts] = useState([]);
@@ -51,7 +52,7 @@ export function AdminProductsPage() {
       render: (row) => {
         const primaryImage = row.images?.find((i: any) => i.isPrimary) || row.images?.[0];
         return primaryImage ? (
-          <img src={primaryImage.url} alt={row.name} className="w-10 h-10 object-cover rounded bg-background" />
+          <img src={getMediaUrl(primaryImage.url)} alt={row.name} className="w-10 h-10 object-cover rounded bg-background" />
         ) : (
           <div className="w-10 h-10 bg-background rounded flex items-center justify-center text-xs text-text-muted">بدون عکس</div>
         );

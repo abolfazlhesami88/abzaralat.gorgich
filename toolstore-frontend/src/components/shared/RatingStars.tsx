@@ -3,7 +3,7 @@ import { toPersianDigits } from '../../utils/formatPrice';
 import { cn } from '../../utils/cn';
 
 interface RatingStarsProps {
-  rating: number;
+  rating: number | string;
   reviewCount?: number;
   size?: 'sm' | 'md' | 'lg';
   interactive?: boolean;
@@ -11,7 +11,8 @@ interface RatingStarsProps {
 }
 
 export function RatingStars({ rating, reviewCount, size = 'md', interactive, onChange }: RatingStarsProps) {
-  const sizes = { sm: 14, md: 18, lg: 24 };
+  const numericRating = Number(rating) || 0;
+  const sizes = { sm: 13, md: 17, lg: 22 };
   const starSize = sizes[size];
 
   return (
@@ -27,13 +28,13 @@ export function RatingStars({ rating, reviewCount, size = 'md', interactive, onC
           >
             <Star
               size={starSize}
-              className={star <= Math.round(rating) ? 'fill-gold text-gold' : 'fill-none text-border'}
+              className={star <= Math.round(numericRating) ? 'fill-gold text-gold' : 'fill-none text-gray-300'}
             />
           </button>
         ))}
       </div>
-      {reviewCount !== undefined && (
-        <span className="text-xs text-text-secondary">
+      {reviewCount !== undefined && reviewCount > 0 && (
+        <span className="text-[11px] text-text-secondary dir-ltr">
           ({toPersianDigits(reviewCount)})
         </span>
       )}

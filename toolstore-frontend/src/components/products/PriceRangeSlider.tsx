@@ -44,7 +44,7 @@ export function PriceRangeSlider({ minPrice, maxPrice, onChange, absoluteMax = 5
         />
       </div>
       <p className="text-xs text-text-muted">
-        {formatPrice(localMin * 10)} تا {formatPrice(localMax * 10)} تومان
+        {formatPrice(localMin)} تا {formatPrice(localMax)} تومان
       </p>
       <button
         onClick={handleApply}

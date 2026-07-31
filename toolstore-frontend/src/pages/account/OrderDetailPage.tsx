@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { ordersApi } from '../../api/orders.api';
 import { OrderStatusBadge } from '../../components/account/OrderStatusBadge';
 import { formatPrice } from '../../utils/formatPrice';
+import { getMediaUrl } from '../../utils/media';
 
 export function OrderDetailPage() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
@@ -97,7 +98,7 @@ export function OrderDetailPage() {
           {order.items.map((item) => (
             <div key={item.id} className="p-5 flex gap-4">
               {item.productImage && (
-                <img src={import.meta.env.VITE_API_BASE_URL?.replace('/api', '') + item.productImage} alt={item.productName} className="w-20 h-20 rounded-button object-cover" />
+                <img src={getMediaUrl(item.productImage)} alt={item.productName} className="w-20 h-20 rounded-button object-cover" />
               )}
               <div className="flex-1">
                 <h3 className="font-semibold text-sm">{item.productName}</h3>

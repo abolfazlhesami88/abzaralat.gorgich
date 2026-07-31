@@ -2,36 +2,38 @@ import { formatPrice } from '../../utils/formatPrice';
 import { cn } from '../../utils/cn';
 
 interface PriceDisplayProps {
-  price: number;
-  compareAtPrice?: number | null;
+  price: number | string;
+  compareAtPrice?: number | string | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
 export function PriceDisplay({ price, compareAtPrice, size = 'md', className }: PriceDisplayProps) {
-  const hasDiscount = compareAtPrice && compareAtPrice > price;
+  const numPrice = Number(price) || 0;
+  const numCompare = compareAtPrice ? Number(compareAtPrice) : null;
+  const hasDiscount = !!(numCompare && numCompare > numPrice);
   const discountPercent = hasDiscount
-    ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
+    ? Math.round(((numCompare - numPrice) / numCompare) * 100)
     : null;
 
   const sizeClasses = {
     sm: 'text-sm',
-    md: 'text-lg',
-    lg: 'text-2xl',
+    md: 'text-base md:text-lg',
+    lg: 'text-xl md:text-2xl',
   };
 
   return (
-    <div className={cn('flex items-center gap-2 flex-wrap', className)}>
+    <div className={cn('flex items-baseline gap-2 flex-wrap', className)}>
       <span className={cn('font-bold text-text-primary', sizeClasses[size])}>
-        {formatPrice(price)} <span className="text-xs font-normal text-text-secondary">تومان</span>
+        {formatPrice(numPrice)} <span className="text-xs font-normal text-text-secondary">تومان</span>
       </span>
-      {hasDiscount && (
+      {hasDiscount && numCompare && (
         <>
-          <span className="text-sm text-text-muted line-through">
-            {formatPrice(compareAtPrice)}
+          <span className="text-xs text-text-muted line-through">
+            {formatPrice(numCompare)}
           </span>
-          <span className="bg-danger/10 text-danger text-xs font-bold px-2 py-0.5 rounded-badge">
-            {discountPercent}٪ تخفیف
+          <span className="bg-danger/10 text-danger text-[10px] md:text-xs font-bold px-1.5 py-0.5 rounded">
+            {discountPercent}٪
           </span>
         </>
       )}

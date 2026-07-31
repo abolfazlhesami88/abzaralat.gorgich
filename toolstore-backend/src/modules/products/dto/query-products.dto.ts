@@ -1,5 +1,5 @@
 import { IsOptional, IsString, IsNumber, IsBoolean, IsEnum, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 
@@ -46,7 +46,7 @@ export class QueryProductsDto extends PaginationDto {
 
   @ApiPropertyOptional({ default: false })
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   inStockOnly?: boolean;
 

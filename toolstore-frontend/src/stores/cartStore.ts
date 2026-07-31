@@ -23,7 +23,7 @@ interface CartState {
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
   applyCoupon: (code: string) => Promise<void>;
-  removeCoupon: () => void;
+  removeCoupon: () => Promise<void>;
   mergeGuestCart: () => Promise<void>;
   clearLocalCart: () => void;
 }
@@ -39,7 +39,7 @@ export const useCartStore = create<CartState>()(
         set({ isLoading: true });
         try {
           const data = await cartApi.get(getSessionId());
-          set({ cart: data });
+          set({ cart: data, appliedCoupon: data.coupon?.code ?? null });
         } finally {
           set({ isLoading: false });
         }
@@ -49,7 +49,7 @@ export const useCartStore = create<CartState>()(
         set({ isLoading: true });
         try {
           const data = await cartApi.addItem({ productId, variantId: variantId ?? undefined, quantity }, getSessionId());
-          set({ cart: data });
+          set({ cart: data, appliedCoupon: data.coupon?.code ?? null });
         } finally {
           set({ isLoading: false });
         }
@@ -57,26 +57,32 @@ export const useCartStore = create<CartState>()(
 
       updateQuantity: async (itemId, quantity) => {
         const data = await cartApi.updateItem(itemId, quantity, getSessionId());
-        set({ cart: data });
+        set({ cart: data, appliedCoupon: data.coupon?.code ?? null });
       },
 
       removeItem: async (itemId) => {
         const data = await cartApi.removeItem(itemId, getSessionId());
-        set({ cart: data });
+        set({ cart: data, appliedCoupon: data.coupon?.code ?? null });
       },
 
       applyCoupon: async (code) => {
         const data = await cartApi.applyCoupon(code, getSessionId());
-        set({ cart: data, appliedCoupon: code });
+        set({ cart: data, appliedCoupon: data.coupon?.code ?? code });
       },
 
-      removeCoupon: () => {
-        set((state) => ({
-          appliedCoupon: null,
-          cart: state.cart ? { ...state.cart, coupon: null, discountAmount: 0 } : null,
-        }));
-        // refetch cart without coupon
-        get().fetchCart();
+      removeCoupon: async () => {
+        set({ isLoading: true });
+        try {
+          const data = await cartApi.removeCoupon(getSessionId());
+          set({ cart: data, appliedCoupon: null });
+        } catch {
+          set((state) => ({
+            appliedCoupon: null,
+            cart: state.cart ? { ...state.cart, coupon: null, discountAmount: 0 } : null,
+          }));
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
       // بعد از لاگین صدا زده میشود تا سبد Guest ادغام شود

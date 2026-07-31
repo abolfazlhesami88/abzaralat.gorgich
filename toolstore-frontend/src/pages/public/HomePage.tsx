@@ -10,7 +10,7 @@ import { NewsletterSection } from '../../components/home/NewsletterSection';
 
 export function HomePage() {
   return (
-    <div>
+    <div className="bg-background min-h-screen font-body text-text-primary">
       <HeroSection />
       <CategoryGrid />
       <FeaturedProducts />
@@ -23,3 +23,4 @@ export function HomePage() {
     </div>
   );
 }
+

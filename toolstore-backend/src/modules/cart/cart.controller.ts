@@ -75,6 +75,26 @@ export class CartController {
     return { data: await this.cartService.applyCoupon(dto.couponCode, userId, sessionId) };
   }
 
+  @Delete('coupon')
+  @ApiOperation({ summary: 'حذف کد تخفیف' })
+  async removeCoupon(
+    @CurrentUser() user: any,
+    @Req() req: any,
+  ) {
+    const { userId, sessionId } = this.getIds(user, req);
+    return { data: await this.cartService.removeCoupon(userId, sessionId) };
+  }
+
+  @Post('remove-coupon')
+  @ApiOperation({ summary: 'حذف کد تخفیف' })
+  async removeCouponPost(
+    @CurrentUser() user: any,
+    @Req() req: any,
+  ) {
+    const { userId, sessionId } = this.getIds(user, req);
+    return { data: await this.cartService.removeCoupon(userId, sessionId) };
+  }
+
   @Post('merge-guest')
   @ApiOperation({ summary: 'همگامسازی سبد Guest بعد از لاگین' })
   async mergeGuest(

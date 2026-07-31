@@ -6,7 +6,7 @@ interface StatCardProps {
   value: string | number;
   icon: LucideIcon;
   trend?: { value: number; label: string };
-  color?: 'gold' | 'success' | 'danger' | 'blue';
+  color?: 'gold' | 'success' | 'danger' | 'blue' | 'primary';
 }
 
 const colorMap = {

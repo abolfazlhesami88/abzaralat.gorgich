@@ -7,7 +7,7 @@ export function useFilterState() {
 
   const filters: ProductQueryParams = useMemo(() => ({
     page: Number(searchParams.get('page')) || 1,
-    limit: 500,
+    limit: searchParams.get('limit') ? Number(searchParams.get('limit')) : 12,
     categorySlug: searchParams.get('category') ?? undefined,
     brandSlug: searchParams.get('brand') ?? undefined,
     minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,

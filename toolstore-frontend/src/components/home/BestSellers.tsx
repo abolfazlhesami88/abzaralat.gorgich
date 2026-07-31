@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useBestSellers } from '../../hooks/useProducts';
 import { ProductCard } from '../shared/ProductCard';
 import { ProductCardSkeleton } from '../shared/ProductCardSkeleton';
@@ -7,14 +8,23 @@ export function BestSellers() {
   const { data: products, isLoading } = useBestSellers();
 
   return (
-    <section className="bg-white py-16">
+    <section className="bg-surface py-16 md:py-20 border-b border-border/40">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="section-heading font-display text-h2 text-text-primary">
-            پرفروشترین محصولات
-          </h2>
-          <Link to="/products?sortBy=best_selling" className="text-sm font-semibold text-gold-dark hover:underline">
-            مشاهده همه ←
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+          <div>
+            <h2 className="section-heading font-display text-h2 text-text-primary mb-2">
+              پرفروش‌ترین محصولات
+            </h2>
+            <p className="text-text-secondary text-sm md:text-base pr-4">
+              محبوب‌ترین و پرفروش‌ترین محصولات از نگاه مشتریان
+            </p>
+          </div>
+          <Link
+            to="/products?sortBy=best_selling"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark hover:text-gold transition-colors group self-start md:self-auto"
+          >
+            <span>مشاهده همه</span>
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
           </Link>
         </div>
 
@@ -27,3 +37,4 @@ export function BestSellers() {
     </section>
   );
 }
+

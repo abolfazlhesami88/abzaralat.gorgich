@@ -132,18 +132,23 @@ export class CartService {
 
   async applyCoupon(code: string, userId?: string, sessionId?: string) {
     const cart = await this.getOrCreate(userId, sessionId);
-    const summary = await this.buildSummary(cart);
+    const subtotal = (cart.items ?? []).reduce((sum, item) => sum + item.priceAtTime * item.quantity, 0);
 
-    const { coupon, discountAmount } = await this.couponsService.validate(
-      code, summary.subtotal,
+    const { coupon } = await this.couponsService.validate(
+      code, subtotal,
     );
 
-    return {
-      ...summary,
-      coupon: { code: coupon.code, type: coupon.type, value: coupon.value },
-      discountAmount,
-      total: summary.subtotal - discountAmount + summary.shippingCost,
-    };
+    cart.couponCode = coupon.code;
+    await this.cartRepo.save(cart);
+
+    return this.buildSummary(cart);
+  }
+
+  async removeCoupon(userId?: string, sessionId?: string) {
+    const cart = await this.getOrCreate(userId, sessionId);
+    cart.couponCode = null;
+    await this.cartRepo.save(cart);
+    return this.buildSummary(cart);
   }
 
   // همگامسازی سبد Guest با سبد کاربر بعد از لاگین
@@ -157,6 +162,10 @@ export class CartService {
     if (!guestCart || !guestCart.items?.length) return;
 
     const userCart = await this.getOrCreate(userId);
+    if (guestCart.couponCode && !userCart.couponCode) {
+      userCart.couponCode = guestCart.couponCode;
+      await this.cartRepo.save(userCart);
+    }
 
     for (const guestItem of guestCart.items) {
       try {
@@ -183,6 +192,19 @@ export class CartService {
       ? SHIPPING_THRESHOLD - subtotal
       : 0;
 
+    let coupon: { code: string; type: string; value: number } | null = null;
+    let discountAmount = 0;
+
+    if (cart.couponCode) {
+      try {
+        const validated = await this.couponsService.validate(cart.couponCode, subtotal);
+        coupon = { code: validated.coupon.code, type: validated.coupon.type, value: validated.coupon.value };
+        discountAmount = validated.discountAmount;
+      } catch {
+        // اگر کد تخفیف دیگر معتبر نیست، آن را در نظر نگیر
+      }
+    }
+
     return {
       cartId: cart.id,
       items: items.map((item) => ({
@@ -203,7 +225,9 @@ export class CartService {
       subtotal,
       shippingCost,
       freeShippingRemaining,
-      total: subtotal + shippingCost,
+      coupon,
+      discountAmount,
+      total: subtotal - discountAmount + shippingCost,
       itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
     };
   }
