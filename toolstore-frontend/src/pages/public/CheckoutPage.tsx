@@ -140,8 +140,12 @@ export function CheckoutPage() {
 
               <div className="mt-8 flex justify-end">
                 <button
-                  onClick={() => setCurrentStep('payment')}
-                  className="bg-gold hover:bg-gold-hover text-text-primary font-bold px-8 py-3 rounded-button transition-colors"
+                  onClick={() => {
+                    if (!selectedAddressId) return;
+                    setCurrentStep('payment');
+                  }}
+                  disabled={!selectedAddressId}
+                  className="bg-gold hover:bg-gold-hover text-text-primary font-bold px-8 py-3 rounded-button transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   تأیید و ادامه
                 </button>

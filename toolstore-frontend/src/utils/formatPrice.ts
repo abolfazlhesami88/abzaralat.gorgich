@@ -1,9 +1,16 @@
 export function formatPrice(priceInRials: number): string {
   const toman = Math.floor(priceInRials / 10);
-  return new Intl.NumberFormat('fa-IR').format(toman);
+  return new Intl.NumberFormat('en-US').format(toman);
 }
 
-export function toPersianDigits(input: string | number): string {
+export function toLatinDigits(input: string | number): string {
   const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-  return String(input).replace(/[0-9]/g, (d) => persianDigits[parseInt(d)]);
+  let str = String(input);
+  for (let i = 0; i < 10; i++) {
+    str = str.replace(new RegExp(persianDigits[i], 'g'), String(i));
+  }
+  return str;
 }
+
+// برای همگام‌سازی، تابع قدیمی هم ارقام لاتین (0-9) برمی‌گرداند
+export const toPersianDigits = toLatinDigits;

@@ -1,5 +1,7 @@
 export const ENDPOINTS = {
   AUTH: {
+    REQUEST_OTP: '/auth/request-otp',
+    VERIFY_OTP: '/auth/verify-otp',
     REGISTER: '/auth/register',
     LOGIN: '/auth/login',
     LOGOUT: '/auth/logout',

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, ShoppingBag, Tag, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { useCartStore } from '../../stores/cartStore';
 import { PriceDisplay } from '../../components/shared/PriceDisplay';
 import { QuantitySelector } from '../../components/product-detail/QuantitySelector';
@@ -35,8 +36,8 @@ export function CartPage() {
     setCouponLoading(true);
     try {
       await removeCoupon();
-    } catch {
-      // safe fallback
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'خطا در حذف کد تخفیف');
     } finally {
       setCouponLoading(false);
     }
@@ -47,8 +48,8 @@ export function CartPage() {
     setPendingItemId(itemId);
     try {
       await removeItem(itemId);
-    } catch {
-      // safe fallback
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'حذف آیتم ممکن نشد');
     } finally {
       setPendingItemId(null);
     }
@@ -59,8 +60,8 @@ export function CartPage() {
     setPendingItemId(itemId);
     try {
       await updateQuantity(itemId, qty);
-    } catch {
-      // safe fallback
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'تغییر تعداد ممکن نشد');
     } finally {
       setPendingItemId(null);
     }

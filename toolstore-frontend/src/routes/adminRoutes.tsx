@@ -10,6 +10,7 @@ import { AdminCategoriesPage } from '../pages/admin/AdminCategoriesPage';
 import { AdminBrandsPage } from '../pages/admin/AdminBrandsPage';
 import { AdminCouponsPage } from '../pages/admin/AdminCouponsPage';
 import { AdminReviewsPage } from '../pages/admin/AdminReviewsPage';
+import { AdminDesignPage } from '../pages/admin/AdminDesignPage';
 
 export const adminRoutes = {
   path: '/admin',
@@ -30,5 +31,6 @@ export const adminRoutes = {
     { path: 'brands', element: <AdminBrandsPage /> },
     { path: 'coupons', element: <AdminCouponsPage /> },
     { path: 'reviews', element: <AdminReviewsPage /> },
+    { path: 'design', element: <AdminDesignPage /> },
   ],
 };

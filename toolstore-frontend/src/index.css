@@ -9,19 +9,19 @@
   :root {
     /* ─── رنگهای اصلی برند ─────────────────────────────────────── */
     --color-white: 0 0% 100%;
-    --color-background: 40 20% 97%;        /* #F8F7F4 */
-    --color-gold: 43 56% 55%;              /* #C9A84C */
-    --color-gold-hover: 43 60% 44%;        /* #B8962E */
-    --color-gold-light: 43 50% 90%;        /* #F5EDD6 */
-    --color-gold-dark: 43 75% 30%;         /* #8B6914 */
+    --color-background: 40 30% 98%;        /* #FDFCFA - گرم و کرمی روشن */
+    --color-gold: 43 56% 55%;              /* #C79A4B */
+    --color-gold-hover: 43 60% 44%;        /* #A67D34 */
+    --color-gold-light: 43 50% 92%;        /* #F5EDD6 */
+    --color-gold-dark: 43 60% 35%;         /* #A67D34 */
 
     --color-surface: 0 0% 100%;
-    --color-border: 40 15% 89%;            /* #E8E4DB */
+    --color-border: 40 20% 90%;            /* #ECE4D3 */
     --color-border-gold: 43 56% 55%;
 
-    --color-text-primary: 30 15% 9%;       /* #1A1814 */
-    --color-text-secondary: 30 8% 41%;     /* #6B6356 */
-    --color-text-muted: 30 8% 59%;         /* #9E9285 */
+    --color-text-primary: 34 30% 10%;      /* #221C12 - قهوه‌ای زغالی تیره */
+    --color-text-secondary: 38 10% 50%;    /* #8C8272 - بژ خاکستری */
+    --color-text-muted: 38 8% 65%;         /* #A39B8E */
 
     --color-success: 145 47% 33%;          /* #2D7A4F */
     --color-danger: 6 56% 47%;             /* #C0392B */
@@ -63,12 +63,12 @@
   body {
     @apply bg-background text-text-primary;
     font-family: 'Vazirmatn', 'Inter', sans-serif;
-    font-feature-settings: 'ss01' on, 'ss02' on;
+    font-feature-settings: 'ss01' on, 'ss02' on, 'ss03' off;
   }
 
-  /* اعداد در رابط کاربری همیشه لاتین باشند مگر صراحتاً فارسی خواسته شود */
-  .num-fa {
-    font-feature-settings: 'ss03' on;
+  /* اعداد در رابط کاربری همیشه لاتین (0-9) باشند */
+  .num-fa, * {
+    font-feature-settings: 'ss01' on, 'ss02' on, 'ss03' off;
   }
 }
 
@@ -80,6 +80,44 @@
   .section-heading::before {
     content: '';
     @apply absolute right-0 top-1 bottom-1 w-1 bg-gold rounded-full;
+  }
+
+  /* ─── دکمه یکسان «افزودن به سبد خرید» در تمام کارت‌های محصول ─── */
+  .btn-add-to-cart {
+    background: linear-gradient(135deg, #f4d675 0%, #c9971f 100%);
+    color: #2b1f08;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(180, 140, 30, 0.25);
+    transition: all 0.2s ease;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .btn-add-to-cart:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(180, 140, 30, 0.35);
+  }
+
+  .btn-add-to-cart:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .btn-add-to-cart:disabled {
+    background: #f0ebe1;
+    color: #8c8272;
+    box-shadow: none;
+    cursor: not-allowed;
+    border: 1px solid #ded7c8;
+    white-space: nowrap;
   }
 
   /* صفحه محصول — ساختار دو ستون */

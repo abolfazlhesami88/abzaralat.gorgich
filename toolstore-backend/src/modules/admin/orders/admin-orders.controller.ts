@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from '../../orders/entities/order.entity';
+import { Product } from '../../products/entities/product.entity';
 import { OrderStatus, PaymentStatus, UserRole } from '../../../common/constants/app.constants';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { RolesGuard } from '../../../common/guards/roles.guard';
@@ -17,6 +18,7 @@ import { paginate } from '../../../common/dto/pagination.dto';
 export class AdminOrdersController {
   constructor(
     @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
+    @InjectRepository(Product) private readonly productRepo: Repository<Product>,
     private readonly notificationsService: NotificationsService,
   ) {}
 
@@ -62,8 +64,14 @@ export class AdminOrdersController {
     @Body('status') status: OrderStatus,
     @Body('trackingCode') trackingCode?: string,
   ) {
-    const order = await this.orderRepo.findOne({ where: { id } });
+    const order = await this.orderRepo.findOne({
+      where: { id },
+      relations: { items: true },
+    });
     if (!order) return;
+
+    const wasAlreadyCancelled = order.status === OrderStatus.CANCELLED;
+    const isCancellingNow = status === OrderStatus.CANCELLED && !wasAlreadyCancelled;
 
     order.status = status;
     if (trackingCode) order.trackingCode = trackingCode;
@@ -75,7 +83,17 @@ export class AdminOrdersController {
 
     await this.orderRepo.save(order);
 
-    // اطلاعرسانی به مشتری
+    // برگشت موجودی در صورتی که سفارش تازه لغو شده باشد
+    if (isCancellingNow && order.items?.length) {
+      for (const item of order.items) {
+        if (item.productId) {
+          await this.productRepo.increment({ id: item.productId }, 'stock', item.quantity);
+          await this.productRepo.decrement({ id: item.productId }, 'soldCount', item.quantity);
+        }
+      }
+    }
+
+    // اطلاع‌رسانی به مشتری
     if (order.userId) {
       const messages: Record<string, { title: string; body: string }> = {
         confirmed: { title: 'سفارش تأیید شد', body: `سفارش ${order.orderNumber} تأیید و در حال آماده‌سازی است` },

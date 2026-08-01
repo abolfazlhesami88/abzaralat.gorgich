@@ -8,6 +8,7 @@ import { ProductVariant } from '../../products/entities/product-variant.entity';
 import slugify from 'slugify';
 import { paginate } from '../../../common/dto/pagination.dto';
 import { PAGINATION } from '../../../common/constants/app.constants';
+import { CreateProductDto } from './dto/create-product.dto';
 
 export interface AdminProductQuery {
   page?: number;
@@ -16,29 +17,6 @@ export interface AdminProductQuery {
   categoryId?: string;
   status?: string;
   lowStock?: boolean;
-}
-
-export interface CreateProductDto {
-  name: string;
-  sku: string;
-  slug?: string;
-  shortDescription?: string;
-  description?: string;
-  price: number;
-  compareAtPrice?: number;
-  costPrice?: number;
-  stock: number;
-  lowStockThreshold?: number;
-  weight?: number;
-  categoryId?: string;
-  brandId?: string;
-  status?: string;
-  isFeatured?: boolean;
-  isNew?: boolean;
-  metaTitle?: string;
-  metaDescription?: string;
-  specs?: { specKey: string; specValue: string; sortOrder?: number }[];
-  variants?: { name: string; sku?: string; priceModifier?: number; stock?: number; attributes?: Record<string, string> }[];
 }
 
 @Injectable()

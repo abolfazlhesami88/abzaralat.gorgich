@@ -1,6 +1,6 @@
 import {
   Entity, Column, ManyToOne, OneToMany,
-  JoinColumn, BeforeInsert, Index,
+  JoinColumn, Index,
 } from 'typeorm';
 import { BaseEntity } from '../../../database/entities/base.entity';
 import { User } from '../../users/entities/user.entity';
@@ -83,9 +83,4 @@ export class Order extends BaseEntity {
     eager: true,
   })
   items: OrderItem[];
-
-  @BeforeInsert()
-  generateOrderNumber() {
-    // Placeholder
-  }
 }

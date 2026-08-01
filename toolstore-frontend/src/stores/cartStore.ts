@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { toast } from 'react-hot-toast';
 import type { CartSummary } from '../types/cart.types';
 import { cartApi } from '../api/cart.api';
 
@@ -75,11 +76,11 @@ export const useCartStore = create<CartState>()(
         try {
           const data = await cartApi.removeCoupon(getSessionId());
           set({ cart: data, appliedCoupon: null });
-        } catch {
-          set((state) => ({
-            appliedCoupon: null,
-            cart: state.cart ? { ...state.cart, coupon: null, discountAmount: 0 } : null,
-          }));
+        } catch (err: any) {
+          const msg =
+            err?.response?.data?.message ?? 'خطا در حذف کد تخفیف. لطفاً دوباره تلاش کنید.';
+          toast.error(msg);
+          // state را تغییر نمی‌دهیم — کاربر می‌تواند دوباره تلاش کند
         } finally {
           set({ isLoading: false });
         }

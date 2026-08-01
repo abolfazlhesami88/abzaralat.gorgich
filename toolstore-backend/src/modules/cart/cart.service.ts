@@ -9,6 +9,7 @@ import { Product } from '../products/entities/product.entity';
 import { ProductVariant } from '../products/entities/product-variant.entity';
 import { CouponsService } from '../coupons/coupons.service';
 import { AddToCartDto } from './dto/add-to-cart.dto';
+import { CouponType } from '../../common/constants/app.constants';
 
 const SHIPPING_THRESHOLD = 30_000_000; // ۳,۰۰۰,۰۰۰ تومان — ارسال رایگان
 const SHIPPING_COST = 500_000;         // ۵۰,۰۰۰ تومان هزینه ارسال
@@ -23,7 +24,7 @@ export class CartService {
     private readonly couponsService: CouponsService,
   ) {}
 
-  // دریافت یا ساخت سبد خرید — برای هر دو حالت Guest و کاربر لاگینکرده
+  // دریافت یا ساخت سبد خرید — برای هر دو حالت Guest و کاربر لاگین‌کرده
   async getOrCreate(userId?: string, sessionId?: string): Promise<Cart> {
     if (!userId && !sessionId) {
       throw new BadRequestException('شناسه کاربر یا نشست الزامی است');
@@ -55,7 +56,7 @@ export class CartService {
     const cart = await this.getOrCreate(userId, sessionId);
 
     const product = await this.productRepo.findOne({ where: { id: dto.productId, status: 'active' as any } });
-    if (!product) throw new NotFoundException('محصول یافت نشد');
+    if (!product) throw new NotFoundException('محصول یافت نشد یا در دسترس نیست');
 
     // بررسی موجودی
     const availableStock = dto.variantId
@@ -78,7 +79,7 @@ export class CartService {
     if (existingItem) {
       const newQty = existingItem.quantity + dto.quantity;
       if (newQty > availableStock) {
-        throw new BadRequestException(`حداکثر ${availableStock} عدد میتوانید سفارش دهید`);
+        throw new BadRequestException(`حداکثر ${availableStock} عدد می‌توانید سفارش دهید`);
       }
       existingItem.quantity = newQty;
       await this.cartItemRepo.save(existingItem);
@@ -135,7 +136,7 @@ export class CartService {
     const subtotal = (cart.items ?? []).reduce((sum, item) => sum + item.priceAtTime * item.quantity, 0);
 
     const { coupon } = await this.couponsService.validate(
-      code, subtotal,
+      code, subtotal, cart.userId ?? userId,
     );
 
     cart.couponCode = coupon.code;
@@ -151,8 +152,7 @@ export class CartService {
     return this.buildSummary(cart);
   }
 
-  // همگامسازی سبد Guest با سبد کاربر بعد از لاگین
-  // وقتی کاربر لاگین میکند، آیتمهای سبد Guest به سبد کاربر منتقل میشوند
+  // همگام‌سازی سبد Guest با سبد کاربر بعد از لاگین
   async mergeGuestCart(sessionId: string, userId: string) {
     const guestCart = await this.cartRepo.findOne({
       where: { sessionId },
@@ -178,7 +178,6 @@ export class CartService {
       }
     }
 
-    // پاک کردن سبد Guest
     await this.clearCart(guestCart.id);
     await this.cartRepo.delete(guestCart.id);
   }
@@ -187,23 +186,28 @@ export class CartService {
   private async buildSummary(cart: Cart) {
     const items = cart.items ?? [];
     const subtotal = items.reduce((sum, item) => sum + item.priceAtTime * item.quantity, 0);
-    const shippingCost = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-    const freeShippingRemaining = subtotal < SHIPPING_THRESHOLD
-      ? SHIPPING_THRESHOLD - subtotal
-      : 0;
 
     let coupon: { code: string; type: string; value: number } | null = null;
     let discountAmount = 0;
 
     if (cart.couponCode) {
       try {
-        const validated = await this.couponsService.validate(cart.couponCode, subtotal);
+        const validated = await this.couponsService.validate(cart.couponCode, subtotal, cart.userId ?? undefined);
         coupon = { code: validated.coupon.code, type: validated.coupon.type, value: validated.coupon.value };
         discountAmount = validated.discountAmount;
       } catch {
         // اگر کد تخفیف دیگر معتبر نیست، آن را در نظر نگیر
       }
     }
+
+    let shippingCost = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+    if (coupon?.type === CouponType.FREE_SHIPPING) {
+      shippingCost = 0;
+    }
+
+    const freeShippingRemaining = subtotal < SHIPPING_THRESHOLD && coupon?.type !== CouponType.FREE_SHIPPING
+      ? SHIPPING_THRESHOLD - subtotal
+      : 0;
 
     return {
       cartId: cart.id,

@@ -44,17 +44,18 @@ export class OrdersService {
     });
     if (!address) throw new NotFoundException('آدرس یافت نشد');
 
-    // محاسبه کوپن
+    // محاسبه کوپن با دریافت userId برای کنترل سقف perUserLimit
     let discountAmount = 0;
     let couponCode: string | null = null;
     let appliedCoupon: any = null;
 
     if (dto.couponCode) {
       const { coupon, discountAmount: discount } = await this.couponsService.validate(
-        dto.couponCode, cartSummary.subtotal,
+        dto.couponCode, cartSummary.subtotal, userId,
       );
+      const shippingCostBeforeCoupon = cartSummary.subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
       discountAmount = coupon.type === CouponType.FREE_SHIPPING
-        ? SHIPPING_COST
+        ? shippingCostBeforeCoupon
         : discount;
       couponCode = coupon.code;
       appliedCoupon = coupon;
@@ -64,19 +65,32 @@ export class OrdersService {
     const finalShipping = appliedCoupon?.type === CouponType.FREE_SHIPPING ? 0 : shippingCost;
     const total = cartSummary.subtotal - discountAmount + finalShipping;
 
-    // ─── Transaction: بررسی موجودی + ایجاد سفارش + کاهش موجودی ────
+    // ─── Transaction: بررسی موجودی با لاک FOR UPDATE + ایجاد سفارش + کاهش موجودی ────
     return this.dataSource.transaction(async (manager) => {
-      // بررسی موجودی برای تمام آیتمها
+      const lockedProducts = new Map<string, Product>();
+
+      // بررسی موجودی و وضعیت فعال بودن تمامی آیتم‌ها با قفل بدبینانه (pessimistic_write)
       for (const item of cartSummary.items) {
-        const product = await manager.findOne(Product, { where: { id: item.product!.id } });
-        if (!product || product.stock < item.quantity) {
+        if (!item.product) continue;
+        const product = await manager.findOne(Product, {
+          where: { id: item.product.id },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (!product || (product as any).status !== 'active') {
+          throw new BadRequestException(`محصول "${item.product.name}" دیگر در دسترس نیست`);
+        }
+
+        if (product.stock < item.quantity) {
           throw new BadRequestException(
-            `موجودی محصول "${item.product!.name}" کافی نیست`,
+            `موجودی محصول "${item.product.name}" کافی نیست (موجودی فعلی: ${product.stock})`,
           );
         }
+
+        lockedProducts.set(product.id, product);
       }
 
-      // تولید شماره سفارش منحصربهفرد
+      // تولید شماره سفارش منحصربه‌فرد
       const orderNumber = await this.generateOrderNumber(manager);
 
       // ایجاد سفارش
@@ -93,52 +107,60 @@ export class OrdersService {
         },
         status: OrderStatus.PENDING,
         paymentStatus: PaymentStatus.UNPAID,
-        paymentMethod: dto.paymentMethod,
         subtotal: cartSummary.subtotal,
         discountAmount,
         shippingCost: finalShipping,
-        taxAmount: 0,
         total,
         couponCode,
-        notes: dto.notes ?? undefined,
+        notes: dto.notes,
       });
 
       const savedOrder = await manager.save(order);
 
-      // ایجاد آیتمهای سفارش + کاهش موجودی
+      // ساخت آیتم‌های سفارش + کاهش موجودی و افزایش تعداد فروش
       for (const item of cartSummary.items) {
-        await manager.save(OrderItem, {
+        if (!item.product) continue;
+        const orderItem = manager.create(OrderItem, {
           orderId: savedOrder.id,
-          productId: item.product!.id,
-          productName: item.product!.name,
-          productSku: item.product!.sku,
-          productImage: item.product!.image,
+          productId: item.product.id,
+          variantId: item.variant?.id ?? null,
+          productName: item.product.name,
           variantName: item.variant?.name ?? null,
-          quantity: item.quantity,
           unitPrice: item.priceAtTime,
-          totalPrice: item.priceAtTime * item.quantity,
+          quantity: item.quantity,
+          totalPrice: item.totalPrice,
         });
+        await manager.save(orderItem);
 
-        // کاهش موجودی
-        await manager.decrement(Product, { id: item.product!.id }, 'stock', item.quantity);
-        // افزایش تعداد فروش
-        await manager.increment(Product, { id: item.product!.id }, 'soldCount', item.quantity);
+        // کاهش موجودی و افزایش فروش از روی کامپوننت لاک‌شده
+        const product = lockedProducts.get(item.product.id)!;
+        product.stock -= item.quantity;
+        product.soldCount += item.quantity;
+        await manager.save(product);
       }
 
-      // افزایش استفاده کوپن
+      // افزایش تعداد استفاده از کد تخفیف
       if (appliedCoupon) {
         await this.couponsService.incrementUsage(appliedCoupon.id);
       }
 
-      // پاک کردن سبد خرید
+      // پاک کردن سبد خرید کاربر
       await this.cartService.clearCart(cartSummary.cartId);
+
+      // ارسال اعلان به کاربر
+      await this.notificationsService.create(userId, {
+        title: 'سفارش جدید ثبت شد',
+        body: `سفارش شما با شماره ${orderNumber} ثبت شد و در حال پردازش است.`,
+        type: 'order_created' as any,
+        link: `/account/orders/${orderNumber}`,
+      });
 
       return savedOrder;
     });
   }
 
-  // ─── لیست سفارشات کاربر ─────────────────────────────────────────
-  async findUserOrders(userId: string, page = 1, limit = 10) {
+  // ─── لیست سفارش‌های کاربر ─────────────────────────────────────────
+  async getUserOrders(userId: string, page = 1, limit = 10) {
     const [items, total] = await this.orderRepo.findAndCount({
       where: { userId },
       relations: { items: true },
@@ -150,8 +172,16 @@ export class OrdersService {
     return paginate(items, total, page, limit);
   }
 
-  // ─── جزئیات سفارش ────────────────────────────────────────────────
-  async findByOrderNumber(orderNumber: string, userId: string) {
+  async findUserOrders(userId: string) {
+    return this.orderRepo.find({
+      where: { userId },
+      relations: { items: true },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  // ─── جزئیات یک سفارش ─────────────────────────────────────────────
+  async getOrderDetail(userId: string, orderNumber: string): Promise<Order> {
     const order = await this.orderRepo.findOne({
       where: { orderNumber, userId },
       relations: { items: true },
@@ -161,17 +191,27 @@ export class OrdersService {
     return order;
   }
 
-  async cancelOrder(orderNumber: string, userId: string) {
-    const order = await this.findByOrderNumber(orderNumber, userId);
+  async findByOrderNumber(orderNumber: string, userId: string): Promise<Order> {
+    return this.getOrderDetail(userId, orderNumber);
+  }
 
-    // فقط سفارشهای pending یا confirmed قابل لغو هستند
-    if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
-      throw new BadRequestException('این سفارش قابل لغو نیست');
+  // ─── لغو سفارش توسط کاربر ─────────────────────────────────────────
+  async cancelOrder(orderNumber: string, userId: string): Promise<Order> {
+    const order = await this.orderRepo.findOne({
+      where: { orderNumber, userId },
+      relations: { items: true },
+    });
+
+    if (!order) throw new NotFoundException('سفارش یافت نشد');
+
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException('تنها سفارش‌های در انتظار پردازش قابل لغو هستند');
     }
 
     order.status = OrderStatus.CANCELLED;
+    const savedOrder = await this.orderRepo.save(order);
 
-    // بازگشت موجودی
+    // بازگرداندن موجودی محصولات
     for (const item of order.items) {
       if (item.productId) {
         await this.productRepo.increment({ id: item.productId }, 'stock', item.quantity);
@@ -179,28 +219,30 @@ export class OrdersService {
       }
     }
 
-    const savedOrder = await this.orderRepo.save(order);
-
-    await this.notificationsService.create(order.userId!, {
-      title: 'سفارش شما لغو شد',
-      body: `سفارش ${order.orderNumber} با موفقیت لغو شد`,
-      type: 'order_cancelled',
-      link: `/account/orders/${order.orderNumber}`,
-    });
-
     return savedOrder;
   }
 
   // ─── Private Helpers ─────────────────────────────────────────────
+
   private async generateOrderNumber(manager: any): Promise<string> {
-    const last = await manager.findOne(Order, {
+    const today = new Date();
+    const year = today.getFullYear().toString().slice(-2);
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    const prefix = `ORD-${year}${month}${day}-`;
+
+    const lastOrder = await manager.findOne(Order, {
+      where: {},
       order: { createdAt: 'DESC' },
+      lock: { mode: 'pessimistic_write' },
     });
 
-    const lastNumber = last?.orderNumber
-      ? parseInt(last.orderNumber.split('-')[1]) + 1
-      : 1001;
+    let sequence = 1;
+    if (lastOrder && lastOrder.orderNumber.startsWith(prefix)) {
+      const lastSeq = parseInt(lastOrder.orderNumber.replace(prefix, ''), 10);
+      if (!isNaN(lastSeq)) sequence = lastSeq + 1;
+    }
 
-    return `TS-${lastNumber}`;
+    return `${prefix}${sequence.toString().padStart(4, '0')}`;
   }
 }

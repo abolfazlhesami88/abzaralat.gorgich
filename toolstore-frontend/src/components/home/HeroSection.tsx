@@ -1,9 +1,25 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, Wrench, Hammer, Compass, Settings, Zap, Shield } from 'lucide-react';
+import { siteSettingsApi } from '../../api/site-settings.api';
+import { getMediaUrl } from '../../utils/media';
 
 export function HeroSection() {
+  const [heroImageUrl, setHeroImageUrl] = useState<string>('/hero_tools.jpg');
+
+  useEffect(() => {
+    siteSettingsApi
+      .getSettings()
+      .then((settings) => {
+        if (settings.hero_image_url) {
+          setHeroImageUrl(settings.hero_image_url);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
-    <section className="relative bg-[#0e0c09] text-[#f3ede0] py-12 sm:py-16 md:py-20 px-4 sm:px-6 overflow-hidden select-none">
+    <section className="relative bg-[#fdfcfa] text-[#221c12] py-10 sm:py-14 md:py-16 px-4 sm:px-6 overflow-hidden select-none">
       {/* استایل انیمیشن‌های شناور ملایم */}
       <style>{`
         @keyframes float-1 {
@@ -28,108 +44,105 @@ export function HeroSection() {
         .animate-float-4 { animation: float-4 10s ease-in-out infinite 1.5s; }
       `}</style>
 
-      {/* نورهای شعاعی و گرادیان پس‌زمینه */}
-      <div className="absolute top-0 right-0 w-[550px] h-[550px] bg-[radial-gradient(circle,rgba(217,184,105,0.09)_0%,transparent_70%)] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[550px] h-[550px] bg-[radial-gradient(circle,rgba(217,184,105,0.07)_0%,transparent_70%)] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle,rgba(217,184,105,0.04)_0%,transparent_60%)] pointer-events-none" />
+      {/* ۲ هاله شعاعی طلایی کمرنگ در گوشه‌ها برای عمق ظریف */}
+      <div className="absolute top-0 right-0 w-[550px] h-[550px] bg-[radial-gradient(circle,rgba(217,184,105,0.14)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[550px] h-[550px] bg-[radial-gradient(circle,rgba(199,154,75,0.12)_0%,transparent_70%)] pointer-events-none" />
 
-      {/* الگو شبکه نوری طلایی محو */}
-      <div className="absolute inset-0 opacity-[0.07] pointer-events-none">
-        <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="none">
-          <defs>
-            <pattern id="hero-grid" width="48" height="48" patternUnits="userSpaceOnUse">
-              <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#d9b869" strokeWidth="0.5" strokeOpacity="0.6" />
-              <circle cx="48" cy="48" r="1.5" fill="#d9b869" fillOpacity="0.8" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#hero-grid)" />
-        </svg>
-      </div>
-
-      {/* آیکون‌های شناور ابزارآلات در اطراف کارت */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-10 hidden md:block">
-        {/* بالا چپ */}
-        <div className="absolute top-[12%] left-[6%] text-[#d9b869] opacity-20 animate-float-1">
-          <Wrench size={52} strokeWidth={1.2} />
+      {/* آیکون‌های خطی شناور در پس‌زمینه (opacity ۱۵٪، طلایی تیره) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 hidden md:block">
+        <div className="absolute top-[8%] left-[4%] text-[#a67d34] opacity-15 animate-float-1">
+          <Wrench size={56} strokeWidth={1.2} />
         </div>
-        {/* بالا راست */}
-        <div className="absolute top-[15%] right-[7%] text-[#d9b869] opacity-20 animate-float-2">
-          <Hammer size={48} strokeWidth={1.2} />
+        <div className="absolute top-[10%] right-[4%] text-[#a67d34] opacity-15 animate-float-2">
+          <Hammer size={52} strokeWidth={1.2} />
         </div>
-        {/* پایین چپ */}
-        <div className="absolute bottom-[16%] left-[8%] text-[#d9b869] opacity-15 animate-float-3">
-          <Compass size={50} strokeWidth={1.2} />
+        <div className="absolute bottom-[10%] left-[5%] text-[#a67d34] opacity-15 animate-float-3">
+          <Compass size={54} strokeWidth={1.2} />
         </div>
-        {/* پایین راست */}
-        <div className="absolute bottom-[18%] right-[6%] text-[#d9b869] opacity-20 animate-float-4">
-          <Settings size={56} strokeWidth={1.2} />
+        <div className="absolute bottom-[12%] right-[4%] text-[#a67d34] opacity-15 animate-float-4">
+          <Settings size={60} strokeWidth={1.2} />
         </div>
-        {/* مرکز چپ */}
-        <div className="absolute top-[48%] left-[2%] text-[#d9b869] opacity-15 animate-float-2">
-          <Zap size={40} strokeWidth={1.2} />
+        <div className="absolute top-[48%] left-[2%] text-[#a67d34] opacity-15 animate-float-2">
+          <Zap size={44} strokeWidth={1.2} />
         </div>
-        {/* مرکز راست */}
-        <div className="absolute top-[52%] right-[3%] text-[#d9b869] opacity-15 animate-float-1">
-          <Shield size={42} strokeWidth={1.2} />
+        <div className="absolute top-[50%] right-[2%] text-[#a67d34] opacity-15 animate-float-1">
+          <Shield size={46} strokeWidth={1.2} />
         </div>
       </div>
 
-      {/* کارت شیشه‌ای اصلی معلق */}
-      <div className="relative z-20 w-full max-w-[980px] mx-auto rounded-[24px] sm:rounded-[32px] p-6 sm:p-10 md:p-12 lg:p-14 backdrop-blur-[20px] bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-[#d9b869]/25 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85),0_0_40px_rgba(217,184,105,0.06)] overflow-hidden">
-        {/* لایه نور ظریف بالای کارت (Inset Highlight) */}
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none" />
+      {/* کارت شناور مرکزی هیرو — چیدمان دو ستونه (متن سمت راست، تصویر ابزار سمت چپ) */}
+      <div className="relative z-10 w-full max-w-[1020px] mx-auto rounded-[28px] p-6 sm:p-10 md:p-12 bg-gradient-to-br from-[#ffffff] via-[#fdfbf7] to-[#fbf9f4] border border-[#d9b869]/35 shadow-[0_20px_50px_rgba(34,28,18,0.06),0_2px_12px_rgba(199,154,75,0.08)] overflow-hidden">
+        {/* نوار نور ظریف بالایی (Inset Highlight) */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d9b869]/40 to-transparent pointer-events-none" />
 
-        <div className="max-w-2xl">
-          {/* بج کیفیت و اصالت */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#d9b869]/10 border border-[#d9b869]/25 text-[#e8cd8f] text-xs sm:text-sm font-medium mb-6 backdrop-blur-md">
-            <ShieldCheck size={16} className="text-[#d9b869]" />
-            <span>بیش از ۵۰۰ محصول اصل و گارانتی‌دار</span>
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-10 text-right">
+          {/* ستون راست: متن و دکمه‌ها (flex: 1.1) */}
+          <div className="flex-[1.1] w-full">
+            {/* بج پرکنتراست اصالت و کیفیت */}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#fbf1d9] border border-[#ecd9a8] text-[#a67d34] text-xs sm:text-sm font-extrabold mb-5 shadow-[0_2px_6px_rgba(150,110,30,0.08)]">
+              <ShieldCheck size={16} className="text-[#c79a4b]" />
+              <span>بیش از ۵۰۰ محصول اصل و گارانتی‌دار</span>
+            </div>
+
+            {/* عنوان اصلی با فاصله خطوط باز (leading-[1.55]) */}
+            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold leading-[1.55] tracking-tight mb-4 text-[#221c12]">
+              ابزار حرفه‌ای،
+              <span className="block mt-1.5 bg-gradient-to-r from-[#a67d34] via-[#c79a4b] to-[#d9b869] bg-clip-text text-transparent">
+                کیفیت بی‌نظیر
+              </span>
+            </h1>
+
+            {/* توضیح کوتاه */}
+            <p className="text-[#8c8272] text-base md:text-lg mb-7 max-w-xl leading-relaxed font-normal">
+              از برندهای معتبر جهانی Bosch، DeWalt و Makita — مستقیم به دست شما
+            </p>
+
+            {/* دکمه‌های فراخوان (CTA) */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
+              <Link
+                to="/products"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#c79a4b] via-[#d9b869] to-[#c79a4b] text-[#221c12] font-extrabold text-sm md:text-base shadow-[0_4px_18px_rgba(199,154,75,0.35)] hover:shadow-[0_6px_26px_rgba(199,154,75,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+              >
+                <span>مشاهده محصولات</span>
+                <ArrowLeft size={18} />
+              </Link>
+              <Link
+                to="/products"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl border border-[#c79a4b]/60 text-[#a67d34] bg-white/90 hover:bg-[#fbf7f0] hover:border-[#c79a4b] font-bold text-sm md:text-base transition-all duration-300"
+              >
+                <span>دسته‌بندی ابزارها</span>
+              </Link>
+            </div>
+
+            {/* آمار فروشگاه با ارقام انگلیسی/لاتین (0-9) */}
+            <div className="grid grid-cols-3 gap-4 mt-8 pt-6 border-t border-[#ece4d3]">
+              <div>
+                <p className="text-2xl sm:text-3xl font-extrabold text-[#a67d34]">+500</p>
+                <p className="text-xs sm:text-sm text-[#8c8272] mt-0.5 font-medium">محصول متنوع</p>
+              </div>
+              <div>
+                <p className="text-2xl sm:text-3xl font-extrabold text-[#a67d34]">+8</p>
+                <p className="text-xs sm:text-sm text-[#8c8272] mt-0.5 font-medium">برند معتبر</p>
+              </div>
+              <div>
+                <p className="text-2xl sm:text-3xl font-extrabold text-[#a67d34]">+10,000</p>
+                <p className="text-xs sm:text-sm text-[#8c8272] mt-0.5 font-medium">مشتری راضی</p>
+              </div>
+            </div>
           </div>
 
-          {/* عنوان اصلی */}
-          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-[50px] font-extrabold leading-[1.25] tracking-tight mb-5 text-[#f3ede0]">
-            ابزار حرفه‌ای،
-            <br />
-            <span className="bg-gradient-to-r from-[#e8cd8f] via-[#d9b869] to-[#c4a659] bg-clip-text text-transparent">
-              کیفیت بی‌نظیر
-            </span>
-          </h1>
+          {/* ستون چپ: ترکیب تصویری ابزار صنعتی واقعی با زاویه و سایه زمین (flex: 0.9) */}
+          <div className="flex-[0.9] relative flex items-center justify-center min-h-[260px] sm:min-h-[300px] w-full lg:w-auto">
+            {/* تصویر ترکیب ابزار با افت سایه ۳بعدی و زاویه */}
+            <div className="relative group">
+              <img
+                src={getMediaUrl(heroImageUrl)}
+                alt="ابزارآلات صنعتی گرگیچ"
+                className="max-w-[280px] sm:max-w-[340px] lg:max-w-[380px] w-full object-contain rounded-2xl filter drop-shadow-[0_25px_35px_rgba(90,70,20,0.25)] -rotate-3 transition-all duration-500 group-hover:rotate-[-1deg] group-hover:scale-[1.02]"
+              />
 
-          {/* توضیح زیر عنوان */}
-          <p className="text-[#b8ac95] text-base md:text-lg mb-8 max-w-xl leading-relaxed">
-            از برندهای معتبر جهانی Bosch، DeWalt و Makita — مستقیم به دست شما
-          </p>
-
-          {/* دکمه‌های فراخوان (CTA) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
-            <Link
-              to="/products"
-              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#d9b869] to-[#e8cd8f] text-[#0e0c09] font-bold text-sm md:text-base shadow-[0_4px_20px_rgba(217,184,105,0.25)] hover:shadow-[0_6px_28px_rgba(217,184,105,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
-            >
-              <span>مشاهده محصولات</span>
-              <ArrowLeft size={18} />
-            </Link>
-            <Link
-              to="/products"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] text-[#f3ede0] border border-[#d9b869]/30 font-semibold text-sm md:text-base transition-all duration-300"
-            >
-              <span>دسته‌بندی ابزارها</span>
-            </Link>
-          </div>
-
-          {/* آمار فروشگاه */}
-          <div className="grid grid-cols-3 gap-4 mt-10 pt-7 border-t border-[#d9b869]/15">
-            <div>
-              <p className="text-2xl sm:text-3xl font-extrabold text-[#e8cd8f]">۵۰۰+</p>
-              <p className="text-xs sm:text-sm text-[#b8ac95] mt-0.5">محصول متنوع</p>
-            </div>
-            <div>
-              <p className="text-2xl sm:text-3xl font-extrabold text-[#e8cd8f]">۸+</p>
-              <p className="text-xs sm:text-sm text-[#b8ac95] mt-0.5">برند معتبر</p>
-            </div>
-            <div>
-              <p className="text-2xl sm:text-3xl font-extrabold text-[#e8cd8f]">۱۰هزار+</p>
-              <p className="text-xs sm:text-sm text-[#b8ac95] mt-0.5">مشتری راضی</p>
+              {/* سایه زمین بیضی‌شکل محو (Ground Drop Shadow) */}
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[80%] h-6 bg-[radial-gradient(ellipse,rgba(90,70,20,0.22),transparent_70%)] blur-[5px] pointer-events-none" />
             </div>
           </div>
         </div>

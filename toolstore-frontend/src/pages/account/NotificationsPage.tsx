@@ -1,10 +1,13 @@
-import { useNotifications, useMarkAllRead } from '../../hooks/useNotifications';
+import { useNavigate } from 'react-router-dom';
+import { useNotifications, useMarkAllRead, useMarkRead } from '../../hooks/useNotifications';
 import { Bell, CheckCircle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 export function NotificationsPage() {
   const { data, isLoading } = useNotifications();
   const markAllRead = useMarkAllRead();
+  const markRead = useMarkRead();
+  const navigate = useNavigate();
 
   if (isLoading) return <div className="text-center py-12 text-text-muted">در حال بارگذاری...</div>;
 
@@ -18,6 +21,15 @@ export function NotificationsPage() {
       </div>
     );
   }
+
+  const handleNotifClick = (notif: any) => {
+    if (!notif.isRead) {
+      markRead.mutate(notif.id);
+    }
+    if (notif.link) {
+      navigate(notif.link);
+    }
+  };
 
   return (
     <div>
@@ -39,15 +51,25 @@ export function NotificationsPage() {
         {notifications.map((notif: any) => (
           <div
             key={notif.id}
+            role={notif.link ? 'button' : undefined}
+            tabIndex={notif.link ? 0 : undefined}
+            onClick={() => handleNotifClick(notif)}
+            onKeyDown={(e) => e.key === 'Enter' && handleNotifClick(notif)}
             className={cn(
               'p-4 rounded-card border transition-colors relative',
-              notif.isRead ? 'bg-white border-border' : 'bg-gold-light/10 border-gold/30'
+              notif.link ? 'cursor-pointer hover:border-gold/40 hover:bg-gold-light/5' : '',
+              notif.isRead ? 'bg-white border-border' : 'bg-gold-light/10 border-gold/30',
             )}
           >
             {!notif.isRead && (
               <span className="absolute top-4 left-4 w-2 h-2 rounded-full bg-gold" />
             )}
-            <h3 className={cn('font-semibold text-sm mb-1', notif.isRead ? 'text-text-secondary' : 'text-text-primary')}>
+            <h3
+              className={cn(
+                'font-semibold text-sm mb-1',
+                notif.isRead ? 'text-text-secondary' : 'text-text-primary',
+              )}
+            >
               {notif.title}
             </h3>
             <p className={cn('text-sm', notif.isRead ? 'text-text-muted' : 'text-text-secondary')}>

@@ -13,24 +13,25 @@ import { Notification } from '../../notifications/entities/notification.entity';
 @Entity('users')
 export class User extends BaseEntity {
   @Index()
-  @Column({ unique: true, length: 255 })
-  email: string;
+  @Column({ unique: true, length: 255, nullable: true })
+  email: string | null;
 
-  @Column({ name: 'password_hash' })
+  @Column({ name: 'password_hash', nullable: true })
   @Exclude() // هیچوقت در response برنمیگردد
-  passwordHash: string;
+  passwordHash: string | null;
 
   @Column({ name: 'first_name', length: 100, nullable: true })
-  firstName: string;
+  firstName: string | null;
 
   @Column({ name: 'last_name', length: 100, nullable: true })
-  lastName: string;
+  lastName: string | null;
 
-  @Column({ length: 20, nullable: true })
-  phone: string;
+  @Index()
+  @Column({ length: 20, nullable: true, unique: true })
+  phone: string | null;
 
   @Column({ name: 'avatar_url', nullable: true })
-  avatarUrl: string;
+  avatarUrl: string | null;
 
   @Column({
     type: 'enum',
@@ -76,10 +77,11 @@ export class User extends BaseEntity {
   }
 
   async validatePassword(password: string): Promise<boolean> {
+    if (!this.passwordHash) return false;
     return bcrypt.compare(password, this.passwordHash);
   }
 
   get fullName(): string {
-    return [this.firstName, this.lastName].filter(Boolean).join(' ');
+    return [this.firstName, this.lastName].filter(Boolean).join(' ') || this.phone || 'کاربر گرگیچ';
   }
 }

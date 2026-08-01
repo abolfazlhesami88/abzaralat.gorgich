@@ -9,7 +9,8 @@ import { RatingStars } from '../shared/RatingStars';
 import { cn } from '../../utils/cn';
 import { useCartStore } from '../../stores/cartStore';
 import { toast } from 'react-hot-toast';
-import { ShoppingCart } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
+import { useWishlistProductIds, useToggleWishlist } from '../../hooks/useWishlist';
 
 interface ProductGridProps {
   products?: Product[];
@@ -18,6 +19,8 @@ interface ProductGridProps {
 }
 
 export function ProductGrid({ products, isLoading, viewMode = 'grid' }: ProductGridProps) {
+  const wishlistIds = useWishlistProductIds();
+  const toggleWishlist = useToggleWishlist();
   if (isLoading) {
     return (
       <div
@@ -56,7 +59,12 @@ export function ProductGrid({ products, isLoading, viewMode = 'grid' }: ProductG
     return (
       <div className="flex flex-col gap-3">
         {products.map((product) => (
-          <ProductListItem key={product.id} product={product} />
+          <ProductListItem
+            key={product.id}
+            product={product}
+            isWishlisted={wishlistIds.includes(product.id)}
+            onToggleWishlist={() => toggleWishlist.mutate(product.id)}
+          />
         ))}
       </div>
     );
@@ -65,13 +73,26 @@ export function ProductGrid({ products, isLoading, viewMode = 'grid' }: ProductG
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <ProductCard
+          key={product.id}
+          product={product}
+          isWishlisted={wishlistIds.includes(product.id)}
+          onToggleWishlist={() => toggleWishlist.mutate(product.id)}
+        />
       ))}
     </div>
   );
 }
 
-function ProductListItem({ product }: { product: Product }) {
+function ProductListItem({
+  product,
+  isWishlisted = false,
+  onToggleWishlist,
+}: {
+  product: Product;
+  isWishlisted?: boolean;
+  onToggleWishlist?: () => void;
+}) {
   const primaryImage = product.images?.find((img) => img.isPrimary) ?? product.images?.[0];
   const { addToCart, isLoading } = useCartStore();
 
@@ -130,21 +151,33 @@ function ProductListItem({ product }: { product: Product }) {
         <div className="flex items-end justify-between gap-3 mt-2">
           <PriceDisplay price={product.price} compareAtPrice={product.compareAtPrice} />
 
-          {product.stock === 0 ? (
-            <span className="text-xs text-gray-400 font-medium shrink-0">موجودی تمام شده</span>
-          ) : (
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={handleAddToCart}
-              disabled={isLoading}
+              onClick={onToggleWishlist}
+              aria-label={isWishlisted ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'}
               className={cn(
-                'shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold',
-                'bg-gold text-white hover:bg-gold-hover transition-colors',
+                'w-8 h-8 flex items-center justify-center rounded-lg border transition-colors',
+                isWishlisted
+                  ? 'border-danger/50 bg-danger/5 text-danger'
+                  : 'border-border text-text-muted hover:border-gold hover:text-gold-dark',
               )}
             >
-              <ShoppingCart size={13} />
-              افزودن به سبد
+              <Heart size={14} className={isWishlisted ? 'fill-danger' : ''} />
             </button>
-          )}
+
+            {product.stock === 0 ? (
+              <span className="text-xs text-gray-400 font-medium">موجودی تمام شده</span>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                disabled={isLoading}
+                className="btn-add-to-cart"
+              >
+                <ShoppingCart size={15} />
+                افزودن به سبد
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

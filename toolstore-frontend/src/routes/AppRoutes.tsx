@@ -10,6 +10,7 @@ import { CheckoutPage } from '../pages/public/CheckoutPage';
 import { OrderSuccessPage } from '../pages/public/OrderSuccessPage';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
+import { AdminLoginPage } from '../pages/auth/AdminLoginPage';
 import { PrivateRoute } from './PrivateRoute';
 import { AccountLayout } from '../layouts/AccountLayout';
 import { AccountDashboard } from '../pages/account/AccountDashboard';
@@ -36,6 +37,9 @@ export function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Route>
+
+      {/* آدرس ورود اختصاصی پنل مدیریت */}
+      <Route path="/adminsite" element={<AdminLoginPage />} />
 
       <Route
         path="/account"

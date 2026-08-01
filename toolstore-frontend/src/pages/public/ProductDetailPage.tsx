@@ -3,9 +3,13 @@ import { useParams, Link } from 'react-router-dom';
 import { useProduct } from '../../hooks/useProducts';
 import { ImageGallery } from '../../components/product-detail/ImageGallery';
 import { ProductTabs } from '../../components/product-detail/ProductTabs';
-import { Loader2, ShoppingCart, ShieldCheck, Truck, RotateCcw, CreditCard } from 'lucide-react';
+import { VariantSelector } from '../../components/product-detail/VariantSelector';
+import type { ProductVariant } from '../../types/product.types';
+import { Loader2, ShoppingCart, ShieldCheck, Truck, RotateCcw, CreditCard, Heart } from 'lucide-react';
 import { useCartStore } from '../../stores/cartStore';
+import { useWishlistProductIds, useToggleWishlist } from '../../hooks/useWishlist';
 import { toast } from 'react-hot-toast';
+import { formatPrice } from '../../utils/formatPrice';
 
 const TRUST_ITEMS = [
   { icon: ShieldCheck, title: 'اصالت کالا', desc: 'ضمانت اصالت برند' },
@@ -19,10 +23,20 @@ export function ProductDetailPage() {
   const { data: product, isLoading } = useProduct(slug!);
   const { addToCart, isLoading: isAddingToCart } = useCartStore();
   const [quantity, setQuantity] = useState(1);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+
+  const wishlistIds = useWishlistProductIds();
+  const toggleWishlist = useToggleWishlist();
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [slug]);
+
+  useEffect(() => {
+    if (product?.variants && product.variants.length > 0) {
+      setSelectedVariant(product.variants[0]);
+    }
+  }, [product]);
 
   const handleAddToCart = async (productId: string, variantId: string | null, qty: number) => {
     try {
@@ -50,12 +64,16 @@ export function ProductDetailPage() {
     );
   }
 
-  const discountPercent = product.compareAtPrice
-    ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
+  const effectivePrice = Number(product.price) + (selectedVariant?.priceModifier ? Number(selectedVariant.priceModifier) : 0);
+  const effectiveStock = selectedVariant ? Number(selectedVariant.stock) : Number(product.stock);
+  const isWishlisted = wishlistIds.includes(product.id);
+
+  const discountPercent = product.compareAtPrice && Number(product.compareAtPrice) > effectivePrice
+    ? Math.round(((Number(product.compareAtPrice) - effectivePrice) / Number(product.compareAtPrice)) * 100)
     : 0;
 
   return (
-    <div className="p-page" style={{ paddingTop: 24, paddingBottom: 80 }}>
+    <div className="p-page select-none" style={{ paddingTop: 24, paddingBottom: 80 }}>
       {/* بردکرامب */}
       <nav style={{ fontSize: 12.5, color: 'var(--p-gray)', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         <Link to="/" style={{ color: 'var(--p-gray)', textDecoration: 'none' }}>خانه</Link>
@@ -71,31 +89,55 @@ export function ProductDetailPage() {
         <span style={{ color: 'var(--p-ink)', fontWeight: 500 }}>{product.name}</span>
       </nav>
 
-      {/* بلوک عنوان */}
-      <div style={{ marginBottom: 32 }}>
-        {product.brand && (
-          <span style={{ fontSize: 12.5, color: 'var(--p-gray)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500 }}>
-            {product.brand.name}
-          </span>
-        )}
-        <h1 style={{ fontSize: 27, fontWeight: 500, lineHeight: 1.5, letterSpacing: '-0.01em', color: 'var(--p-ink)', marginTop: 4 }}>
-          {product.name}
-        </h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
-          {product.reviewCount > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <div style={{ display: 'flex', gap: 2 }}>
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <span key={s} style={{ color: s <= Math.round(product.averageRating) ? 'var(--p-accent-deep)' : 'var(--p-gray-light)', fontSize: 14 }}>★</span>
-                ))}
-              </div>
-              <span style={{ fontSize: 12.5, color: 'var(--p-gray)' }}>({product.reviewCount})</span>
-            </div>
+      {/* بلوک عنوان + دکمه علاقه‌مندی */}
+      <div style={{ marginBottom: 32, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          {product.brand && (
+            <span style={{ fontSize: 12.5, color: 'var(--p-gray)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500 }}>
+              {product.brand.name}
+            </span>
           )}
-          <span style={{ fontSize: 12.5, color: product.stock > 0 ? 'var(--p-ok)' : 'var(--p-gray)' }}>
-            {product.stock > 0 ? `موجود در انبار (${product.stock} عدد)` : 'ناموجود'}
-          </span>
+          <h1 style={{ fontSize: 27, fontWeight: 500, lineHeight: 1.5, letterSpacing: '-0.01em', color: 'var(--p-ink)', marginTop: 4 }}>
+            {product.name}
+          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
+            {product.reviewCount > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ display: 'flex', gap: 2 }}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <span key={s} style={{ color: s <= Math.round(product.averageRating) ? 'var(--p-accent-deep)' : 'var(--p-gray-light)', fontSize: 14 }}>★</span>
+                  ))}
+                </div>
+                <span style={{ fontSize: 12.5, color: 'var(--p-gray)' }}>({product.reviewCount})</span>
+              </div>
+            )}
+            <span style={{ fontSize: 12.5, color: effectiveStock > 0 ? 'var(--p-ok)' : 'var(--p-gray)' }}>
+              {effectiveStock > 0 ? `موجود در انبار (${effectiveStock} عدد)` : 'ناموجود'}
+            </span>
+          </div>
         </div>
+
+        {/* دکمه افزودن به علاقه‌مندی‌ها */}
+        <button
+          onClick={() => toggleWishlist.mutate(product.id)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 16px',
+            borderRadius: 8,
+            border: '1px solid var(--p-line)',
+            background: 'white',
+            cursor: 'pointer',
+            fontSize: 13,
+            fontWeight: 500,
+            color: isWishlisted ? '#e55353' : 'var(--p-ink)',
+            transition: 'all 0.2s',
+          }}
+        >
+          <Heart size={18} className={isWishlisted ? 'fill-[#e55353] text-[#e55353]' : 'text-gray-400'} />
+          <span>{isWishlisted ? 'در علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'}</span>
+        </button>
       </div>
 
       {/* گرید محتوا: گالری + باکس خرید */}
@@ -125,20 +167,31 @@ export function ProductDetailPage() {
               فروشگاه ToolStore Pro
             </div>
 
-            {/* قیمت */}
+            {/* انتخاب واریانت (در صورت وجود) */}
+            {product.variants && product.variants.length > 0 && (
+              <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--p-line)' }}>
+                <VariantSelector
+                  variants={product.variants}
+                  selected={selectedVariant}
+                  onSelect={setSelectedVariant}
+                />
+              </div>
+            )}
+
+            {/* قیمت موثر */}
             <div style={{ marginBottom: 20 }}>
-              {product.compareAtPrice && (
+              {product.compareAtPrice && Number(product.compareAtPrice) > effectivePrice && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ fontSize: 14, color: 'var(--p-gray)', textDecoration: 'line-through' }}>
-                    {product.compareAtPrice.toLocaleString('fa-IR')} تومان
+                    {formatPrice(Number(product.compareAtPrice) * 10)} تومان
                   </span>
                   <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--p-accent-deep)', background: 'var(--p-accent-soft)', padding: '2px 8px', borderRadius: 4 }}>
-                    {discountPercent}٪
+                    %{discountPercent}
                   </span>
                 </div>
               )}
               <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--p-ink)' }}>
-                {product.price.toLocaleString('fa-IR')} <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--p-gray)' }}>تومان</span>
+                {formatPrice(effectivePrice * 10)} <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--p-gray)' }}>تومان</span>
               </div>
             </div>
 
@@ -156,7 +209,7 @@ export function ProductDetailPage() {
               ))}
             </div>
 
-            {/* کنترل تعداد + دکمه خرید */}
+            {/* کنترل تعداد + دکمه خرید با سقف موجودی موثر */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--p-line)', borderRadius: 6, overflow: 'hidden' }}>
                 <button
@@ -167,8 +220,20 @@ export function ProductDetailPage() {
                 </button>
                 <span style={{ width: 40, textAlign: 'center', fontSize: 14, fontWeight: 600 }}>{quantity}</span>
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--p-ink)' }}
+                  onClick={() => setQuantity(Math.min(effectiveStock, quantity + 1))}
+                  disabled={quantity >= effectiveStock}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'none',
+                    border: 'none',
+                    cursor: (quantity >= effectiveStock) ? 'not-allowed' : 'pointer',
+                    fontSize: 16,
+                    color: (quantity >= effectiveStock) ? 'var(--p-gray-light)' : 'var(--p-ink)',
+                  }}
                 >
                   +
                 </button>
@@ -176,11 +241,11 @@ export function ProductDetailPage() {
               <button
                 className="p-btn-primary"
                 style={{ flex: 1 }}
-                disabled={product.stock === 0 || isAddingToCart}
-                onClick={() => handleAddToCart(product.id, null, quantity)}
+                disabled={effectiveStock === 0 || isAddingToCart}
+                onClick={() => handleAddToCart(product.id, selectedVariant?.id ?? null, quantity)}
               >
                 <ShoppingCart size={16} />
-                {product.stock === 0 ? 'ناموجود' : isAddingToCart ? 'در حال افزودن...' : 'افزودن به سبد'}
+                {effectiveStock === 0 ? 'ناموجود' : isAddingToCart ? 'در حال افزودن...' : 'افزودن به سبد'}
               </button>
             </div>
 
@@ -214,17 +279,17 @@ export function ProductDetailPage() {
       <div className="p-mobile-bar">
         <div>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--p-ink)' }}>
-            {product.price.toLocaleString('fa-IR')} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--p-gray)' }}>تومان</span>
+            {formatPrice(effectivePrice * 10)} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--p-gray)' }}>تومان</span>
           </div>
         </div>
         <button
           className="p-btn-primary"
           style={{ width: 'auto', padding: '10px 20px', fontSize: 13 }}
-          disabled={product.stock === 0 || isAddingToCart}
-          onClick={() => handleAddToCart(product.id, null, 1)}
+          disabled={effectiveStock === 0 || isAddingToCart}
+          onClick={() => handleAddToCart(product.id, selectedVariant?.id ?? null, quantity)}
         >
           <ShoppingCart size={15} />
-          {product.stock === 0 ? 'ناموجود' : 'افزودن به سبد'}
+          {effectiveStock === 0 ? 'ناموجود' : 'افزودن به سبد'}
         </button>
       </div>
 

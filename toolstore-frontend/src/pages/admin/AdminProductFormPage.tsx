@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowRight, Upload, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { apiClient } from '../../api/client';
 import { ENDPOINTS } from '../../api/endpoints';
 import { getMediaUrl } from '../../utils/media';
@@ -14,6 +15,7 @@ export function AdminProductFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     name: '',
@@ -25,7 +27,7 @@ export function AdminProductFormPage() {
     brandId: '',
     shortDescription: '',
     description: '',
-    status: 'draft',
+    status: 'active',
   });
 
   const [images, setImages] = useState<any[]>([]);
@@ -81,10 +83,23 @@ export function AdminProductFormPage() {
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
+    // خطای فیلد رو پاک می‌کنیم وقتی کاربر تایپ می‌کنه
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) newErrors.name = 'نام محصول الزامی است';
+    if (!formData.sku.trim()) newErrors.sku = 'کد محصول (SKU) الزامی است';
+    if (!formData.price || Number(formData.price) <= 0) newErrors.price = 'قیمت باید بیشتر از صفر باشد';
+    if (formData.stock === '' || Number(formData.stock) < 0) newErrors.stock = 'موجودی نمی‌تواند منفی باشد';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
     try {
       setIsSubmitting(true);
       const payload = {
@@ -110,7 +125,7 @@ export function AdminProductFormPage() {
           });
         }
         
-        alert('محصول با موفقیت ویرایش شد');
+        toast.success('محصول با موفقیت ویرایش شد');
       } else {
         const response = await apiClient.post(ENDPOINTS.ADMIN.PRODUCTS.CREATE, payload);
         const newId = response.data.data.id;
@@ -126,12 +141,11 @@ export function AdminProductFormPage() {
           });
         }
         
-        alert('محصول با موفقیت اضافه شد');
+        toast.success('محصول با موفقیت اضافه شد');
         navigate('/admin/products');
       }
-    } catch (error) {
-      console.error('Error saving product', error);
-      alert('خطا در ذخیره محصول');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message ?? 'خطا در ذخیره محصول');
     } finally {
       setIsSubmitting(false);
     }
@@ -218,11 +232,28 @@ export function AdminProductFormPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">نام محصول *</label>
-                <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full px-4 py-2 border border-border rounded-input focus:border-gold outline-none" />
+                <input
+                  required
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2 border rounded-input focus:border-gold outline-none ${errors.name ? 'border-danger' : 'border-border'}`}
+                />
+                {errors.name && <p className="text-xs text-danger mt-1">{errors.name}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">کد محصول (SKU) *</label>
-                <input required type="text" name="sku" value={formData.sku} onChange={handleChange} className="w-full px-4 py-2 border border-border rounded-input focus:border-gold outline-none" dir="ltr" />
+                <input
+                  required
+                  type="text"
+                  name="sku"
+                  value={formData.sku}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2 border rounded-input focus:border-gold outline-none ${errors.sku ? 'border-danger' : 'border-border'}`}
+                  dir="ltr"
+                />
+                {errors.sku && <p className="text-xs text-danger mt-1">{errors.sku}</p>}
               </div>
             </div>
 
@@ -277,13 +308,31 @@ export function AdminProductFormPage() {
             
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">قیمت فروش (تومان) *</label>
-              <input required type="number" name="price" value={formData.price} onChange={handleChange} className="w-full px-4 py-2 border border-border rounded-input focus:border-gold outline-none" dir="ltr" />
+              <input
+                required
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 border rounded-input focus:border-gold outline-none ${errors.price ? 'border-danger' : 'border-border'}`}
+                dir="ltr"
+              />
+              {errors.price && <p className="text-xs text-danger mt-1">{errors.price}</p>}
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">موجودی *</label>
-                <input required type="number" name="stock" value={formData.stock} onChange={handleChange} className="w-full px-4 py-2 border border-border rounded-input focus:border-gold outline-none" dir="ltr" />
+                <input
+                  required
+                  type="number"
+                  name="stock"
+                  value={formData.stock}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2 border rounded-input focus:border-gold outline-none ${errors.stock ? 'border-danger' : 'border-border'}`}
+                  dir="ltr"
+                />
+                {errors.stock && <p className="text-xs text-danger mt-1">{errors.stock}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">هشدار موجودی کم</label>

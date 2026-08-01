@@ -6,6 +6,8 @@ import { RatingStars } from '../shared/RatingStars';
 import { StockStatus } from '../shared/StockStatus';
 import { QuantitySelector } from './QuantitySelector';
 import { VariantSelector } from './VariantSelector';
+import { useToggleWishlist, useWishlistProductIds } from '../../hooks/useWishlist';
+import { cn } from '../../utils/cn';
 
 interface ProductInfoProps {
   product: Product;
@@ -21,6 +23,10 @@ export function ProductInfo({ product, onAddToCart, isAddingToCart }: ProductInf
 
   const effectivePrice = product.price + (selectedVariant?.priceModifier ?? 0);
   const effectiveStock = selectedVariant?.stock ?? product.stock;
+
+  const wishlistIds = useWishlistProductIds();
+  const toggleWishlist = useToggleWishlist();
+  const isWishlisted = wishlistIds.includes(product.id);
 
   return (
     <div className="space-y-6">
@@ -70,8 +76,26 @@ export function ProductInfo({ product, onAddToCart, isAddingToCart }: ProductInf
           {effectiveStock === 0 ? 'موجودی تمام شده' : isAddingToCart ? 'در حال افزودن...' : 'افزودن به سبد خرید'}
         </button>
 
-        <button type="button" aria-label="افزودن به علاقه مندی ها" className="w-12 h-12 flex items-center justify-center border border-border/80 rounded-button bg-surface hover:border-gold hover:text-gold-dark hover:bg-gold-light/20 transition-all duration-200">
-          <Heart size={18} />
+        <button
+          type="button"
+          aria-label={isWishlisted ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'}
+          onClick={() => toggleWishlist.mutate(product.id)}
+          disabled={toggleWishlist.isPending}
+          className={cn(
+            'w-12 h-12 flex items-center justify-center border rounded-button transition-all duration-200',
+            isWishlisted
+              ? 'border-danger/50 bg-danger/5 text-danger hover:bg-danger/10'
+              : 'border-border/80 bg-surface hover:border-gold hover:text-gold-dark hover:bg-gold-light/20',
+          )}
+        >
+          <Heart
+            size={18}
+            className={cn(
+              'transition-all',
+              isWishlisted ? 'fill-danger' : '',
+              toggleWishlist.isPending ? 'animate-pulse' : '',
+            )}
+          />
         </button>
 
         <button type="button" aria-label="اشتراک گذاری" className="w-12 h-12 flex items-center justify-center border border-border/80 rounded-button bg-surface hover:border-gold hover:text-gold-dark hover:bg-gold-light/20 transition-all duration-200">

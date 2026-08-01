@@ -20,8 +20,23 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
+  async createByPhone(phone: string): Promise<User> {
+    const user = this.userRepository.create({
+      phone,
+      email: null,
+      passwordHash: null,
+      firstName: 'کاربر',
+      lastName: 'گرگیچ',
+    });
+    return this.userRepository.save(user);
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { email } });
+  }
+
+  async findByPhone(phone: string): Promise<User | null> {
+    return this.userRepository.findOne({ where: { phone } });
   }
 
   async findById(id: string): Promise<User | null> {

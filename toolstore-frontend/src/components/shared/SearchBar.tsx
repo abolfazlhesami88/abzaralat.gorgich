@@ -49,19 +49,19 @@ export function SearchBar() {
           }}
           onFocus={() => setIsOpen(true)}
           placeholder="جستجوی ابزار، برند یا کد محصول..."
-          className="w-full h-11 pr-11 pl-4 rounded-full border border-[#ece4d3] bg-[#faf7f2] text-[#221c12] text-sm placeholder:text-[#8c8272]/70 shadow-[inset_0_2px_4px_rgba(34,28,18,0.04)] focus:outline-none focus:border-[#c79a4b] focus:bg-white focus:shadow-[0_0_14px_rgba(199,154,75,0.25)] transition-all duration-200"
+          className="w-full h-11 sm:h-12 pr-11 pl-4 rounded-full border border-[#ece4d3] bg-[#faf7f2] text-[#221c12] text-sm placeholder:text-[#8c8272]/70 shadow-[inset_0_2px_5px_rgba(34,28,18,0.05)] focus:outline-none focus:border-[#c79a4b] focus:bg-white focus:shadow-[0_0_16px_rgba(199,154,75,0.22)] transition-all duration-200"
         />
         <button
           type="submit"
           className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#c79a4b] hover:text-[#a67d34] transition-colors"
           aria-label="جستجو"
         >
-          <Search size={19} />
+          <Search size={20} />
         </button>
       </form>
 
       {isOpen && suggestions && suggestions.length > 0 && (
-        <div className="absolute top-full mt-2 w-full bg-[#fdfbf7] border border-[#ece4d3] rounded-2xl shadow-[0_10px_30px_rgba(34,28,18,0.08)] overflow-hidden z-50 animate-fade-in">
+        <div className="absolute top-full mt-2 w-full bg-[#fdfcfa] border border-[#ece4d3] rounded-2xl shadow-[0_12px_32px_rgba(34,28,18,0.08)] overflow-hidden z-50 animate-fade-in">
           {suggestions.map((item) => (
             <button
               key={item.id}
@@ -70,7 +70,7 @@ export function SearchBar() {
                 setIsOpen(false);
                 setQuery('');
               }}
-              className="w-full flex items-center gap-3 p-3 hover:bg-[#f4efe4] transition-colors text-right border-b border-[#ece4d3]/60 last:border-0"
+              className="w-full flex items-center gap-3 p-3 hover:bg-[#f5edd6]/40 transition-colors text-right border-b border-[#ece4d3]/60 last:border-0"
             >
               {item.image && (
                 <img
@@ -81,7 +81,7 @@ export function SearchBar() {
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-[#221c12] truncate">{item.name}</p>
-                <p className="text-xs font-medium text-[#c79a4b] mt-0.5">{formatPrice(item.price)} تومان</p>
+                <p className="text-xs font-bold text-[#a67d34] mt-0.5">{formatPrice(item.price)} تومان</p>
               </div>
             </button>
           ))}

@@ -5,6 +5,10 @@ import { Brand } from '../../modules/brands/entities/brand.entity';
 
 export async function seedProducts(dataSource: DataSource) {
   const productRepo = dataSource.getRepository(Product);
+
+  // ۱. آپدیت یکباره محصولات موجود در دیتابیس که روی draft مانده‌اند
+  await dataSource.query("UPDATE products SET status = 'active' WHERE status = 'draft'").catch(() => {});
+
   const existing = await productRepo.count();
   if (existing > 0) return;
 
@@ -261,5 +265,10 @@ export async function seedProducts(dataSource: DataSource) {
     }
   ];
 
-  await productRepo.save(productsData as any);
+  const productsToSave = productsData.map((p) => ({
+    ...p,
+    status: 'active',
+  }));
+
+  await productRepo.save(productsToSave as any);
 }

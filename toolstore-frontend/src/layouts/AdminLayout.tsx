@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag, Users, Tag, Star,
-  FolderOpen, Award, LogOut, Menu, ChevronRight, Bell,
+  FolderOpen, Award, LogOut, Menu, ChevronRight, Bell, Palette,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { authApi } from '../api/auth.api';
@@ -17,6 +17,7 @@ const NAV = [
   { to: '/admin/brands', label: 'برندها', icon: Award },
   { to: '/admin/coupons', label: 'کدهای تخفیف', icon: Tag },
   { to: '/admin/reviews', label: 'نظرات', icon: Star },
+  { to: '/admin/design', label: 'طراحی', icon: Palette },
 ];
 
 export function AdminLayout() {

@@ -5,7 +5,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminProductsService } from './admin-products.service';
-import type { AdminProductQuery, CreateProductDto } from './admin-products.service';
+import type { AdminProductQuery } from './admin-products.service';
+import { CreateProductDto } from './dto/create-product.dto';
 import { UploadService } from '../../upload/upload.service';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';

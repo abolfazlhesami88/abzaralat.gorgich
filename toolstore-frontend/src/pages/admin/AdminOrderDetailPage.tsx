@@ -97,17 +97,26 @@ export function AdminOrderDetailPage() {
               <p className="flex items-start gap-2">
                 <User size={18} className="shrink-0 text-text-muted" />
                 <span className="font-medium text-text-primary">
-                  {order.user ? `${order.user.firstName || ''} ${order.user.lastName || ''}` : 'کاربر مهمان'}
+                  {order.shippingAddress?.fullName || (order.user ? `${order.user.firstName || ''} ${order.user.lastName || ''}` : 'کاربر مهمان')}
                 </span>
               </p>
               <p className="flex items-start gap-2">
                 <Phone size={18} className="shrink-0 text-text-muted" />
-                <span dir="ltr">{order.user?.phone || '—'}</span>
+                <span dir="ltr">{order.shippingAddress?.phone || order.user?.phone || '—'}</span>
               </p>
               <p className="flex items-start gap-2">
                 <MapPin size={18} className="shrink-0 text-text-muted" />
-                <span>تهران، آدرس نمونه (از دیتابیس خوانده شود در صورت وجود فیلد)</span>
+                <span>
+                  {order.shippingAddress
+                    ? `${order.shippingAddress.province}، ${order.shippingAddress.city}، ${order.shippingAddress.addressLine}`
+                    : '—'}
+                </span>
               </p>
+              {order.shippingAddress?.postalCode && (
+                <p className="text-xs text-text-muted pr-7">
+                  کد پستی: <span dir="ltr">{order.shippingAddress.postalCode}</span>
+                </p>
+              )}
             </div>
           </div>
         </div>

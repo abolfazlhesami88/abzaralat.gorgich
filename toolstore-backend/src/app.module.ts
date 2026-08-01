@@ -24,6 +24,7 @@ import { AddressesModule } from './modules/addresses/addresses.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { SiteSettingsModule } from './modules/site-settings/site-settings.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { AdminModule } from './modules/admin/admin.module';
     WishlistModule,
     NotificationsModule,
     AdminModule,
+    SiteSettingsModule,
   ],
   providers: [
     // Global Guards — ترتیب مهم است
