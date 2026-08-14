@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Order } from '../../orders/entities/order.entity';
-import { UserRole } from '../../../common/constants/app.constants';
+import { UserRole, OrderStatus } from '../../../common/constants/app.constants';
 import { paginate } from '../../../common/dto/pagination.dto';
 
 @Injectable()
@@ -14,6 +14,8 @@ export class AdminCustomersService {
   ) {}
 
   async findAll(page = 1, limit = 20, search?: string) {
+    const safeLimit = Math.min(Number(limit) || 20, 500);
+
     const qb = this.userRepo
       .createQueryBuilder('user')
       .where('user.role = :role', { role: UserRole.CUSTOMER })
@@ -27,8 +29,8 @@ export class AdminCustomersService {
     }
 
     const [items, total] = await qb
-      .skip((page - 1) * limit)
-      .take(limit)
+      .skip((page - 1) * safeLimit)
+      .take(safeLimit)
       .getManyAndCount();
 
     // اضافه کردن تعداد سفارشات برای هر کاربر
@@ -41,6 +43,7 @@ export class AdminCustomersService {
             .select('COALESCE(SUM(o.total), 0)', 'sum')
             .where('o.userId = :uid', { uid: user.id })
             .andWhere('o.paymentStatus = :ps', { ps: 'paid' })
+            .andWhere('o.status != :cancelledStatus', { cancelledStatus: OrderStatus.CANCELLED })
             .getRawOne()
             .then((r) => Number(r?.sum ?? 0)),
         ]);
@@ -49,7 +52,7 @@ export class AdminCustomersService {
       }),
     );
 
-    return paginate(enriched, total, page, limit);
+    return paginate(enriched, total, page, safeLimit);
   }
 
   async getDetail(userId: string) {

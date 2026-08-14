@@ -72,7 +72,7 @@ export class OrdersService {
         }
 
         // FIX [Pillar 2]: بررسی موجودی روی Product اصلی با قفل DB
-        if (product.stock < item.quantity) {
+        if (!item.variant?.id && product.stock < item.quantity) {
           throw new BadRequestException(
             `موجودی محصول "${product.name}" کافی نیست (موجودی فعلی: ${product.stock})`,
           );
@@ -113,12 +113,14 @@ export class OrdersService {
       let couponCode: string | null = null;
       let appliedCoupon: any = null;
 
-      if (dto.couponCode) {
+      const shippingCostBeforeCoupon = recomputedSubtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+
+      const couponToApply = dto.couponCode || cartSummary.coupon?.code;
+      if (couponToApply) {
         const { coupon, discountAmount: discount } = await this.couponsService.validate(
-          dto.couponCode, recomputedSubtotal, userId, manager,
+          couponToApply, recomputedSubtotal, userId, manager,
         );
 
-        const shippingCostBeforeCoupon = recomputedSubtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
         discountAmount = coupon.type === CouponType.FREE_SHIPPING
           ? shippingCostBeforeCoupon
           : discount;
@@ -127,11 +129,10 @@ export class OrdersService {
         appliedCoupon = coupon;
       }
 
-      const shippingCost = recomputedSubtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-      const finalShipping = appliedCoupon?.type === CouponType.FREE_SHIPPING ? 0 : shippingCost;
+      const finalShipping = shippingCostBeforeCoupon;
 
       // FIX [Pillar 1 — Financial Integrity]: total هرگز نمی‌تواند منفی باشد
-      const rawTotal = recomputedSubtotal - discountAmount + finalShipping;
+      const rawTotal = recomputedSubtotal + shippingCostBeforeCoupon - discountAmount;
       const total = Math.max(0, rawTotal);
 
       // تولید شماره سفارش منحصربه‌فرد
@@ -184,7 +185,7 @@ export class OrdersService {
 
         // کاهش موجودی و افزایش فروش محصول اصلی
         const product = lockedProducts.get(item.product.id)!;
-        product.stock -= item.quantity;
+        product.stock = Math.max(0, product.stock - item.quantity);
         product.soldCount += item.quantity;
         await manager.save(product);
 

@@ -36,12 +36,14 @@ export class AdminReviewsController {
       qb.andWhere('review.isApproved = :approved', { approved: approved === 'true' });
     }
 
+    const safeLimit = Math.min(Number(limit) || 20, 500);
+
     const [items, total] = await qb
-      .skip((Number(page) - 1) * Number(limit))
-      .take(Number(limit))
+      .skip((Number(page) - 1) * safeLimit)
+      .take(safeLimit)
       .getManyAndCount();
 
-    return { data: paginate(items, total, Number(page), Number(limit)) };
+    return { data: paginate(items, total, Number(page), safeLimit) };
   }
 
   @Patch(':id/approve')

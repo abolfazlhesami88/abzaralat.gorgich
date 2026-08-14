@@ -56,7 +56,7 @@ export function AccountDashboard() {
             همه سفارشات <ArrowLeft size={14} />
           </Link>
         </div>
-        {recentOrders?.items.slice(0, 3).map((order: any) => (
+        {recentOrders?.items?.slice(0, 3).map((order: any) => (
           <Link key={order.id} to={`/account/orders/${order.orderNumber}`}
             className="flex items-center justify-between px-5 py-4 border-b border-border last:border-0 hover:bg-background transition-colors">
             <div>
@@ -69,7 +69,7 @@ export function AccountDashboard() {
             </div>
           </Link>
         ))}
-        {(!recentOrders?.items.length) && (
+        {(!recentOrders?.items?.length) && (
           <p className="text-center text-text-muted text-sm py-8">هنوز سفارشی ثبت نکرده‌اید</p>
         )}
       </div>

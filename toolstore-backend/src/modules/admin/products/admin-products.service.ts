@@ -119,6 +119,17 @@ export class AdminProductsService {
       }
     }
 
+    // اگر variants داده شده، همه قبلی‌ها را پاک و دوباره ذخیره کن
+    if (variants !== undefined) {
+      await this.variantRepo.delete({ productId: id });
+      if (variants.length) {
+        const variantEntities = variants.map((v) =>
+          this.variantRepo.create({ ...v, productId: id }),
+        );
+        await this.variantRepo.save(variantEntities);
+      }
+    }
+
     return this.findOne(id);
   }
 

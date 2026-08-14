@@ -15,7 +15,7 @@ export function OrdersPage() {
 
   if (isLoading) return <div className="text-center py-12 text-text-muted">در حال بارگذاری...</div>;
 
-  if (!data?.items.length) {
+  if (!data?.items?.length) {
     return (
       <div className="text-center py-16">
         <ShoppingBag size={48} className="mx-auto text-border mb-4" />

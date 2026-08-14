@@ -10,6 +10,7 @@ export class AddSearchVector1700000000000 implements MigrationInterface {
       CREATE OR REPLACE FUNCTION products_search_vector_update() RETURNS trigger AS $$
       BEGIN
         NEW.search_vector :=
+          setweight(to_tsvector('simple', coalesce(NEW.sku, '')), 'A') ||
           setweight(to_tsvector('simple', coalesce(NEW.name, '')), 'A') ||
           setweight(to_tsvector('simple', coalesce(NEW.short_description, '')), 'B') ||
           setweight(to_tsvector('simple', coalesce(NEW.description, '')), 'C');
@@ -24,6 +25,7 @@ export class AddSearchVector1700000000000 implements MigrationInterface {
 
       -- Update existing records
       UPDATE products SET search_vector =
+        setweight(to_tsvector('simple', coalesce(sku, '')), 'A') ||
         setweight(to_tsvector('simple', coalesce(name, '')), 'A') ||
         setweight(to_tsvector('simple', coalesce(short_description, '')), 'B') ||
         setweight(to_tsvector('simple', coalesce(description, '')), 'C');

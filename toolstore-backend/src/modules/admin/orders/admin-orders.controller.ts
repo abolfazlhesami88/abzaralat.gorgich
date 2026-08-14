@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Body, Param, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -44,12 +44,14 @@ export class AdminOrdersController {
     if (from) qb.andWhere('order.createdAt >= :from', { from: new Date(from) });
     if (to) qb.andWhere('order.createdAt <= :to', { to: new Date(to) });
 
+    const safeLimit = Math.min(Number(limit) || 20, 500);
+
     const [items, total] = await qb
-      .skip((Number(page) - 1) * Number(limit))
-      .take(Number(limit))
+      .skip((Number(page) - 1) * safeLimit)
+      .take(safeLimit)
       .getManyAndCount();
 
-    return { data: paginate(items, total, Number(page), Number(limit)) };
+    return { data: paginate(items, total, Number(page), safeLimit) };
   }
 
   @Get(':id')
@@ -83,6 +85,7 @@ export class AdminOrdersController {
 
       const wasAlreadyCancelled = order.status === OrderStatus.CANCELLED;
       const isCancellingNow = status === OrderStatus.CANCELLED && !wasAlreadyCancelled;
+      const isReactivatingNow = wasAlreadyCancelled && status !== OrderStatus.CANCELLED;
 
       order.status = status;
       if (trackingCode) order.trackingCode = trackingCode;
@@ -120,6 +123,38 @@ export class AdminOrdersController {
             });
             if (variant) {
               variant.stock += item.quantity;
+              await manager.save(variant);
+            }
+          }
+        }
+      } else if (isReactivatingNow && order.items?.length) {
+        for (const item of order.items) {
+          if (item.productId) {
+            const product = await manager.findOne(Product, {
+              where: { id: item.productId },
+              lock: { mode: 'pessimistic_write' },
+            });
+            if (product) {
+              if (product.stock < item.quantity) {
+                throw new BadRequestException('موجودی کافی برای فعالسازی مجدد این سفارش وجود ندارد');
+              }
+              product.stock = Math.max(0, product.stock - item.quantity);
+              product.soldCount += item.quantity;
+              await manager.save(product);
+            }
+          }
+
+          const variantId = (item as any).variantId;
+          if (variantId) {
+            const variant = await manager.findOne(ProductVariant, {
+              where: { id: variantId },
+              lock: { mode: 'pessimistic_write' },
+            });
+            if (variant) {
+              if (variant.stock < item.quantity) {
+                throw new BadRequestException('موجودی کافی برای فعالسازی مجدد این سفارش وجود ندارد');
+              }
+              variant.stock = Math.max(0, variant.stock - item.quantity);
               await manager.save(variant);
             }
           }

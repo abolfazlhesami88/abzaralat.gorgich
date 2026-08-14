@@ -141,8 +141,8 @@ export class ReviewsService {
       throw new ForbiddenException('نمی‌توانید نظر خودتان را مفید علامت بزنید');
     }
 
-    review.helpfulCount += 1;
-    return this.reviewRepo.save(review);
+    await this.reviewRepo.increment({ id: reviewId }, 'helpfulCount', 1);
+    return this.reviewRepo.findOne({ where: { id: reviewId } });
   }
 
   // ─── این متد بعد از تأیید/رد نظر در مرحله ۸ صدا زده می‌شود ─────────────────

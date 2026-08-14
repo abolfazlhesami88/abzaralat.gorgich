@@ -74,13 +74,13 @@ export class DashboardService {
 
     const rows = await this.dataSource.query(`
       SELECT
-        DATE(created_at) as date,
+        TO_CHAR(created_at, 'YYYY-MM-DD') as date,
         COALESCE(SUM(total), 0) as revenue,
         COUNT(*) as orders
       FROM orders
       WHERE created_at >= $1
         AND payment_status = 'paid'
-      GROUP BY DATE(created_at)
+      GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
       ORDER BY date ASC
     `, [from]);
 

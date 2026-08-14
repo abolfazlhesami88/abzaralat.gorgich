@@ -44,7 +44,8 @@ export class ProductsService {
     }
 
     if (query.inStockOnly) {
-      qb.andWhere('product.stock > 0');
+      qb.leftJoin('product.variants', 'variants');
+      qb.andWhere('(product.stock > 0 OR variants.stock > 0)');
     }
 
     if (query.search) {

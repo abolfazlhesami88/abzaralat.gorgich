@@ -20,12 +20,13 @@ export class AdminCouponsController {
 
   @Get()
   async findAll(@Query('page') page = 1, @Query('limit') limit = 20) {
+    const safeLimit = Math.min(Number(limit) || 20, 500);
     const [items, total] = await this.couponRepo.findAndCount({
       order: { createdAt: 'DESC' },
-      skip: (Number(page) - 1) * Number(limit),
-      take: Number(limit),
+      skip: (Number(page) - 1) * safeLimit,
+      take: safeLimit,
     });
-    return { data: paginate(items, total, Number(page), Number(limit)) };
+    return { data: paginate(items, total, Number(page), safeLimit) };
   }
 
   @Post()

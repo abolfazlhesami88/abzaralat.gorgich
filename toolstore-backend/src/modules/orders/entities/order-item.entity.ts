@@ -19,6 +19,9 @@ export class OrderItem extends BaseEntity {
   @Column({ name: 'product_id', type: 'uuid', nullable: true })
   productId: string | null;
 
+  @Column({ name: 'variant_id', type: 'uuid', nullable: true })
+  variantId: string | null;
+
   @Column({ name: 'product_name', length: 255 })
   productName: string;
 

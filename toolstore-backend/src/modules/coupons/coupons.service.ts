@@ -2,10 +2,10 @@ import {
   Injectable, NotFoundException, BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, EntityManager } from 'typeorm';
+import { Repository, EntityManager, Not } from 'typeorm';
 import { Coupon } from './entities/coupon.entity';
 import { Order } from '../orders/entities/order.entity';
-import { CouponType } from '../../common/constants/app.constants';
+import { CouponType, OrderStatus } from '../../common/constants/app.constants';
 
 @Injectable()
 export class CouponsService {
@@ -32,8 +32,8 @@ export class CouponsService {
     // FIX [Pillar 1 — Business Logic]: بررسی محدودیت استفاده‌ی هر کاربر
     if (userId && coupon.perUserLimit) {
       const usedByUser = manager
-        ? await manager.count(Order, { where: { userId, couponCode: coupon.code } })
-        : await this.orderRepo.count({ where: { userId, couponCode: coupon.code } });
+        ? await manager.count(Order, { where: { userId, couponCode: coupon.code, status: Not(OrderStatus.CANCELLED) } })
+        : await this.orderRepo.count({ where: { userId, couponCode: coupon.code, status: Not(OrderStatus.CANCELLED) } });
 
       if (usedByUser >= coupon.perUserLimit) {
         throw new BadRequestException('شما قبلاً از این کد تخفیف استفاده کرده‌اید');

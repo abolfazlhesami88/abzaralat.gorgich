@@ -96,49 +96,53 @@ export class AuthService {
     const normalizedPhone = this.normalizeAndValidatePhone(dto.phone);
     const inputCode = dto.code.trim();
 
-    const otpRecord = await this.otpRepository.findOne({
-      where: { phone: normalizedPhone },
-      order: { createdAt: 'DESC' },
+    return this.otpRepository.manager.transaction(async (manager) => {
+      const otpRecord = await manager.findOne(OtpCode, {
+        where: { phone: normalizedPhone },
+        order: { createdAt: 'DESC' },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!otpRecord) {
+        throw new BadRequestException('کد تأیید معتبر یافت نشد. لطفاً مجدداً درخواست کد دهید.');
+      }
+
+      if (new Date() > new Date(otpRecord.expiresAt)) {
+        await manager.remove(otpRecord);
+        throw new BadRequestException('کد تأیید منقضی شده است. لطفاً کد جدید دریافت کنید.');
+      }
+
+      if (otpRecord.attempts >= OTP_MAX_ATTEMPTS) {
+        otpRecord.code = 'EXPIRED';
+        await manager.save(otpRecord);
+        throw new BadRequestException('تعداد تلاش‌های اشتباه بیش از حد مجاز است. لطفاً کد جدید دریافت کنید.');
+      }
+
+      const isCodeMatch = crypto.timingSafeEqual(
+        Buffer.from(otpRecord.code.padEnd(10, ' ')),
+        Buffer.from(inputCode.padEnd(10, ' ')),
+      );
+
+      if (!isCodeMatch) {
+        otpRecord.attempts += 1;
+        await manager.save(otpRecord);
+        const remainingAttempts = OTP_MAX_ATTEMPTS - otpRecord.attempts;
+        throw new BadRequestException(`کد وارد شده اشتباه است. (امکان ${remainingAttempts} تلاش دیگر)`);
+      }
+
+      await manager.remove(otpRecord);
+
+      let user = await this.usersService.findByPhone(normalizedPhone);
+      if (!user) {
+        user = await this.usersService.createByPhone(normalizedPhone);
+      }
+
+      if (!user.isActive) {
+        throw new UnauthorizedException('حساب کاربری شما غیرفعال شده است');
+      }
+
+      return this.generateTokensAndSetCookie(user, res);
     });
-
-    if (!otpRecord) {
-      throw new BadRequestException('کد تأیید معتبر یافت نشد. لطفاً مجدداً درخواست کد دهید.');
-    }
-
-    if (new Date() > new Date(otpRecord.expiresAt)) {
-      await this.otpRepository.remove(otpRecord);
-      throw new BadRequestException('کد تأیید منقضی شده است. لطفاً کد جدید دریافت کنید.');
-    }
-
-    if (otpRecord.attempts >= OTP_MAX_ATTEMPTS) {
-      await this.otpRepository.remove(otpRecord);
-      throw new BadRequestException('تعداد تلاش‌های اشتباه بیش از حد مجاز است. لطفاً کد جدید دریافت کنید.');
-    }
-
-    const isCodeMatch = crypto.timingSafeEqual(
-      Buffer.from(otpRecord.code.padEnd(10, ' ')),
-      Buffer.from(inputCode.padEnd(10, ' ')),
-    );
-
-    if (!isCodeMatch) {
-      otpRecord.attempts += 1;
-      await this.otpRepository.save(otpRecord);
-      const remainingAttempts = OTP_MAX_ATTEMPTS - otpRecord.attempts;
-      throw new BadRequestException(`کد وارد شده اشتباه است. (امکان ${remainingAttempts} تلاش دیگر)`);
-    }
-
-    await this.otpRepository.remove(otpRecord);
-
-    let user = await this.usersService.findByPhone(normalizedPhone);
-    if (!user) {
-      user = await this.usersService.createByPhone(normalizedPhone);
-    }
-
-    if (!user.isActive) {
-      throw new UnauthorizedException('حساب کاربری شما غیرفعال شده است');
-    }
-
-    return this.generateTokensAndSetCookie(user, res);
   }
 
   // ─── فرم ثبت‌نام یکپارچه با ایمیل یا شماره موبایل ──────────────────────────────
@@ -223,6 +227,10 @@ export class AuthService {
     const user = await this.usersService.findById(userId);
     if (!user || !user.refreshToken) {
       throw new UnauthorizedException('نشست منقضی شده است، لطفاً دوباره وارد شوید');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('حساب کاربری شما غیرفعال شده است');
     }
 
     if (user.refreshTokenExpiresAt && user.refreshTokenExpiresAt < new Date()) {

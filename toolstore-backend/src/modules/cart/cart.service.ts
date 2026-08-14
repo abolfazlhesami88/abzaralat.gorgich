@@ -202,8 +202,33 @@ export class CartService {
           { productId: guestItem.productId, variantId: guestItem.variantId ?? undefined, quantity: guestItem.quantity },
           userId,
         );
-      } catch {
-        // اگر محصول ناموجود شده، از آن بگذر
+      } catch (error) {
+        let availableStock = 0;
+        if (guestItem.variantId) {
+          const variant = await this.variantRepo.findOne({ where: { id: guestItem.variantId } });
+          availableStock = variant?.stock ?? 0;
+        } else {
+          const product = await this.productRepo.findOne({ where: { id: guestItem.productId } });
+          availableStock = product?.stock ?? 0;
+        }
+        
+        if (availableStock > 0) {
+          const existingItem = userCart.items?.find(
+            (item) => item.productId === guestItem.productId && item.variantId === (guestItem.variantId ?? null)
+          );
+          const roomLeft = availableStock - (existingItem?.quantity || 0);
+
+          if (roomLeft > 0) {
+            try {
+              await this.addItem(
+                { productId: guestItem.productId, variantId: guestItem.variantId ?? undefined, quantity: roomLeft },
+                userId,
+              );
+            } catch (e) {
+              // ignore if still fails
+            }
+          }
+        }
       }
     }
 
@@ -216,7 +241,22 @@ export class CartService {
   // total هرگز نمی‌تواند منفی باشد — Math.max(0, ...) اعمال شده
   private async buildSummary(cart: Cart) {
     const items = cart.items ?? [];
-    const subtotal = items.reduce((sum, item) => sum + item.priceAtTime * item.quantity, 0);
+    
+    let subtotal = 0;
+    for (const item of items) {
+      if (item.product) {
+        let livePrice = item.product.price;
+        if (item.variant) {
+          livePrice += item.variant.priceModifier ?? 0;
+        }
+
+        if (item.priceAtTime !== livePrice) {
+          item.priceAtTime = livePrice;
+          await this.cartItemRepo.save(item);
+        }
+      }
+      subtotal += item.priceAtTime * item.quantity;
+    }
 
     let coupon: { code: string; type: string; value: number } | null = null;
     let discountAmount = 0;

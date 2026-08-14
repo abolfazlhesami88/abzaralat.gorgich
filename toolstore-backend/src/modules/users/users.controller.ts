@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Patch, Post, Body, UseGuards, UploadedFile, UseInterceptors,
+  Controller, Get, Patch, Post, Body, UseGuards, UploadedFile, UseInterceptors, BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -9,6 +9,7 @@ import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UploadService } from '../upload/upload.service';
+import { UPLOAD } from '../../common/constants/app.constants';
 
 @ApiTags('Users')
 @Controller('users')
@@ -34,7 +35,15 @@ export class UsersController {
   }
 
   @Post('profile/avatar')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: UPLOAD.MAX_SIZE },
+    fileFilter: (req, file, cb) => {
+      if (!UPLOAD.ALLOWED_TYPES.includes(file.mimetype as any)) {
+        return cb(new BadRequestException('فرمت فایل نامعتبر است'), false);
+      }
+      cb(null, true);
+    },
+  }))
   async uploadAvatar(
     @CurrentUser('sub') userId: string,
     @UploadedFile() file: Express.Multer.File,

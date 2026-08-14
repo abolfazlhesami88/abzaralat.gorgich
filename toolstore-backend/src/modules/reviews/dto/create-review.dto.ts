@@ -1,4 +1,5 @@
 import { IsUUID, IsInt, Min, Max, IsString, IsOptional, MaxLength, IsNotEmpty } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateReviewDto {
   @IsUUID()
@@ -16,10 +17,12 @@ export class CreateReviewDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
+  @Transform(({ value }) => value?.replace(/[<>]/g, ''))
   title?: string;
 
   @IsNotEmpty({ message: 'متن نظر الزامی است' })
   @IsString()
   @MaxLength(2000)
+  @Transform(({ value }) => value?.replace(/[<>]/g, ''))
   body: string;
 }

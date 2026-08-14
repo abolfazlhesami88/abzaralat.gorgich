@@ -17,7 +17,7 @@ export function ReviewsSection({ productSlug, productId }: { productSlug: string
   const { data: summary } = useRatingSummary(productSlug);
   const { data: reviewsData, isLoading } = useProductReviews(productSlug, page);
 
-  const displayedReviews = reviewsData?.items.filter(
+  const displayedReviews = reviewsData?.items?.filter(
     (review) => selectedRating === null || review.rating === selectedRating,
   );
 

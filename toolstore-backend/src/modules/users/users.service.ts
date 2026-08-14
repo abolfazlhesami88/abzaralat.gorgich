@@ -5,6 +5,7 @@ import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { OrderStatus } from '../../common/constants/app.constants';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -68,6 +69,7 @@ export class UsersService {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('کاربر یافت نشد');
 
+    if ('phone' in dto) delete (dto as any).phone;
     Object.assign(user, dto);
     return this.userRepository.save(user);
   }
@@ -80,7 +82,9 @@ export class UsersService {
     if (!isValid) throw new BadRequestException('رمز عبور فعلی اشتباه است');
 
     user.passwordHash = await bcrypt.hash(dto.newPassword, 12);
-    return this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+    await this.clearRefreshToken(userId);
+    return savedUser;
   }
 
   async getDashboardStats(userId: string) {
@@ -91,6 +95,7 @@ export class UsersService {
         .select('COALESCE(SUM(order.total), 0)', 'total')
         .where('order.userId = :userId', { userId })
         .andWhere('order.paymentStatus = :status', { status: 'paid' })
+        .andWhere('order.status != :cancelledStatus', { cancelledStatus: OrderStatus.CANCELLED })
         .getRawOne()
         .then((r) => Number(r?.total ?? 0)),
       this.dataSource.getRepository('wishlists').count({ where: { userId } }),

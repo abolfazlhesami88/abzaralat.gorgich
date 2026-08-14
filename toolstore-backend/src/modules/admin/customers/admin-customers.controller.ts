@@ -19,7 +19,8 @@ export class AdminCustomersController {
     @Query('limit') limit?: number,
     @Query('search') search?: string,
   ) {
-    return { data: await this.service.findAll(Number(page) || 1, Number(limit) || 20, search) };
+    const safeLimit = Math.min(Number(limit) || 20, 500);
+    return { data: await this.service.findAll(Number(page) || 1, safeLimit, search) };
   }
 
   @Get(':id')
