@@ -151,6 +151,7 @@ export class OrdersService {
         },
         status: OrderStatus.PENDING,
         paymentStatus: PaymentStatus.UNPAID,
+        paymentMethod: dto.paymentMethod, // FIX: Added paymentMethod to be saved with the order
         subtotal: recomputedSubtotal,
         discountAmount,
         shippingCost: finalShipping,

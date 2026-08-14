@@ -32,14 +32,14 @@ services:
       - DB_USERNAME=${DB_USERNAME:-root}
       - DB_PASSWORD=${DB_PASSWORD:-rootpassword}
       - DB_NAME=${DB_NAME:-toolstore}
-      - DB_SYNCHRONIZE=true
+      - DB_SYNCHRONIZE=false
       - DB_SSL=false
-      - JWT_SECRET=${JWT_SECRET:-toolstore_super_secret_key_2024}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-toolstore_refresh_secret_key_2024}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
       - JWT_ACCESS_EXPIRES=15m
       - JWT_REFRESH_EXPIRES=7d
       - KAVENEGAR_API_KEY=${KAVENEGAR_API_KEY}
-      - FRONTEND_URL=https://gorgijtools.ir
+      - FRONTEND_URL=https://abzargorgij.com
       - PORT=3000
     ports:
       - "3000:3000"

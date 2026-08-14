@@ -17,7 +17,7 @@ export class SearchService {
       .leftJoinAndSelect('product.category', 'category')
       .leftJoinAndSelect('product.brand', 'brand')
       .leftJoinAndSelect('product.images', 'images')
-      .where('product.isActive = true')
+      .where('product.status = :status', { status: 'active' }) // FIX: Changed product.isActive to product.status
       .andWhere(`product.search_vector @@ plainto_tsquery('simple', :query)`, { query })
       .addSelect(`ts_rank(product.search_vector, plainto_tsquery('simple', :query))`, 'rank')
       .orderBy('rank', 'DESC')
@@ -47,7 +47,7 @@ export class SearchService {
     const products = await this.productRepo
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.images', 'images')
-      .where('product.isActive = true')
+      .where('product.status = :status', { status: 'active' }) // FIX: Changed product.isActive to product.status
       .andWhere(`product.search_vector @@ plainto_tsquery('simple', :query)`, { query })
       .select(['product.id', 'product.name', 'product.slug', 'product.price', 'images'])
       .limit(limit)

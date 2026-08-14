@@ -17,7 +17,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: (configService.get('jwt.refreshSecret') || configService.get('JWT_REFRESH_SECRET') || 'toolstore_refresh_secret_key_2024') as string,
+      secretOrKey: configService.get('jwt.refreshSecret') as string, // FIX [Pillar 3 — Security]: Removed hardcoded JWT refresh secret fallback
       passReqToCallback: true,
     } as any);
   }

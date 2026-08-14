@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query,
-  UseGuards, UseInterceptors, UploadedFile, BadRequestException,
+  UseGuards, UseInterceptors, UploadedFile, BadRequestException, ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -42,7 +42,7 @@ export class AdminProductsController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return { data: await this.adminProductsService.findOne(id) };
   }
 
@@ -52,12 +52,12 @@ export class AdminProductsController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: Partial<CreateProductDto>) {
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: Partial<CreateProductDto>) {
     return { data: await this.adminProductsService.update(id, dto) };
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
     await this.adminProductsService.remove(id);
     return { data: null, message: 'محصول حذف شد' };
   }
@@ -71,7 +71,7 @@ export class AdminProductsController {
     fileFilter: imageFileFilter,
   }))
   async addImage(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @UploadedFile() file: Express.Multer.File,
     @Query('primary') primary?: string,
   ) {
@@ -83,13 +83,13 @@ export class AdminProductsController {
   }
 
   @Delete(':id/images/:imageId')
-  async removeImage(@Param('id') id: string, @Param('imageId') imageId: string) {
+  async removeImage(@Param('id', ParseUUIDPipe) id: string, @Param('imageId', ParseUUIDPipe) imageId: string) {
     await this.adminProductsService.removeImage(imageId);
     return { data: null };
   }
 
   @Post(':id/images/reorder')
-  async reorderImages(@Param('id') id: string, @Body('imageIds') imageIds: string[]) {
+  async reorderImages(@Param('id', ParseUUIDPipe) id: string, @Body('imageIds') imageIds: string[]) {
     await this.adminProductsService.reorderImages(id, imageIds);
     return { data: null };
   }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, MoreThanOrEqual } from 'typeorm';
 import { Order } from '../../orders/entities/order.entity';
 import { User } from '../../users/entities/user.entity';
 import { Product } from '../../products/entities/product.entity';
@@ -30,7 +30,7 @@ export class DashboardService {
       activeProducts,
     ] = await Promise.all([
       this.orderRepo.count({
-        where: { createdAt: today as any },
+        where: { createdAt: MoreThanOrEqual(today) }, // FIX: Calculate from the beginning of today instead of exact midnight
       }),
       this.orderRepo
         .createQueryBuilder('o')
@@ -41,7 +41,7 @@ export class DashboardService {
         .then((r) => Number(r?.sum ?? 0)),
       this.userRepo.count({ where: { role: UserRole.CUSTOMER } }),
       this.userRepo.count({
-        where: { role: UserRole.CUSTOMER, createdAt: today as any },
+        where: { role: UserRole.CUSTOMER, createdAt: MoreThanOrEqual(today) }, // FIX: Calculate from the beginning of today instead of exact midnight
       }),
       this.productRepo
         .createQueryBuilder('p')

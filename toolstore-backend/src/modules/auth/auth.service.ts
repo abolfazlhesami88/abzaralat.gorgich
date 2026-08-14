@@ -80,7 +80,10 @@ export class AuthService {
       await this.otpRepository.save(newOtp);
     }
 
-    await this.kavenegarService.sendOtp(normalizedPhone, randomCode);
+    const smsSent = await this.kavenegarService.sendOtp(normalizedPhone, randomCode);
+    if (!smsSent) {
+      return { message: 'کد تأیید ثبت شد اما ارسال پیامک با مشکل مواجه شد. لطفاً چند لحظه صبر کرده و دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.' }; // FIX: Warn if OTP is saved but SMS sending fails
+    }
 
     return {
       message: 'کد تأیید با موفقیت ارسال شد',
@@ -286,12 +289,12 @@ export class AuthService {
     const payload = { sub: user.id, email: user.email, phone: user.phone, role: user.role };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get('jwt.secret') || this.configService.get('JWT_SECRET') || 'toolstore_super_secret_key_2024',
+      secret: this.configService.get('jwt.secret') as string, // FIX [Pillar 3 — Security]: Removed hardcoded JWT secret fallback
       expiresIn: (this.configService.get('jwt.accessExpires') || '15m') as any,
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get('jwt.refreshSecret') || this.configService.get('JWT_REFRESH_SECRET') || 'toolstore_refresh_secret_key_2024',
+      secret: this.configService.get('jwt.refreshSecret') as string, // FIX [Pillar 3 — Security]: Removed hardcoded JWT refresh secret fallback
       expiresIn: (this.configService.get('jwt.refreshExpires') || '7d') as any,
     });
 
