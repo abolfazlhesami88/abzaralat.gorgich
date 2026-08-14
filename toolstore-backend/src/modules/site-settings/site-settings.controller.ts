@@ -7,6 +7,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBearerAuth } from '@nestjs/swagger';
@@ -16,6 +17,8 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { UserRole } from '../../common/constants/app.constants';
+
+const MAX_HERO_FILE_SIZE = 5 * 1024 * 1024; // ۵ مگابایت
 
 @ApiTags('Site Settings')
 @Controller('site-settings')
@@ -36,7 +39,27 @@ export class SiteSettingsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'آپلود تصویر هیروی جدید (ادمین)' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file'))
+  // FIX [Pillar 4 — Upload Security]:
+  // قبلاً FileInterceptor بدون limits تعریف شده بود.
+  // حالا fileSize محدود می‌شود تا فایل‌های بزرگ حتی
+  // قبل از رسیدن به service رد شوند (جلوگیری از OOM).
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: MAX_HERO_FILE_SIZE },
+    fileFilter: (_req, file, cb) => {
+      // FIX: فقط MIME type های تأییدشده — نه بر اساس extension
+      const allowedMimes = ['image/png', 'image/webp', 'image/jpeg'];
+      if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(
+          new BadRequestException(
+            'فرمت فایل مجاز نیست. فقط PNG، WebP و JPEG پذیرفته می‌شود',
+          ),
+          false,
+        );
+      }
+    },
+  }))
   async uploadHeroImage(@UploadedFile() file: Express.Multer.File) {
     const heroImageUrl = await this.siteSettingsService.saveHeroImage(file);
     return {

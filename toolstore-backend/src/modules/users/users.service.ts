@@ -26,7 +26,7 @@ export class UsersService {
       email: null,
       passwordHash: null,
       firstName: 'کاربر',
-      lastName: 'گرگیچ',
+      lastName: 'گرگیج',
     });
     return this.userRepository.save(user);
   }
@@ -37,6 +37,13 @@ export class UsersService {
 
   async findByPhone(phone: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { phone } });
+  }
+
+  async findByIdentifier(identifier: string): Promise<User | null> {
+    return this.userRepository
+      .createQueryBuilder('user')
+      .where('user.email = :identifier OR user.phone = :identifier', { identifier })
+      .getOne();
   }
 
   async findById(id: string): Promise<User | null> {

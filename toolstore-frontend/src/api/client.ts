@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -31,7 +31,11 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as any;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (originalRequest.url?.includes('/auth/refresh') || originalRequest.url?.includes('/auth/login')) {
+      if (
+        originalRequest.url?.includes('/auth/refresh') ||
+        originalRequest.url?.includes('/auth/login') ||
+        originalRequest.url?.includes('/auth/logout')
+      ) {
         return Promise.reject(error);
       }
 
@@ -56,8 +60,22 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
+        // FIX [Data Leakage Prevention]:
+        // فراخوانی logout() استیت‌های React Query، Zustand و localStorage را پاک‌سازی می‌کند
+        // تا اطلاعات کاربر قبلی در حافظه یا مرورگر باقی نماند.
         useAuthStore.getState().logout();
-        window.location.href = '/login';
+        
+        // Redirect to admin login if 401 occurs on admin paths.
+        // For public or customer protected routes, do not forcibly set window.location.href = '/login'.
+        // PrivateRoute will handle redirection for protected customer routes (/account),
+        // while guest users browsing public routes remain on their current page.
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/admin') || currentPath.startsWith('/adminsite')) {
+          if (currentPath !== '/adminsite') {
+            window.location.href = '/adminsite';
+          }
+        }
+        
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

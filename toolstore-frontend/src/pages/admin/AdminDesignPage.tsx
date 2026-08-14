@@ -37,9 +37,9 @@ export function AdminDesignPage() {
     setError('');
 
     // اعتبارسنجی فرمت شفاف PNG یا WebP
-    const allowedTypes = ['image/png', 'image/webp'];
+    const allowedTypes = ['image/png', 'image/webp', 'image/jpeg'];
     if (!allowedTypes.includes(file.type)) {
-      setError('این فرمت از پس‌زمینه شفاف پشتیبانی نمی‌کند، لطفاً فایل PNG یا WebP آپلود کنید.');
+      setError('فرمت فایل مجاز نیست. لطفاً فایل PNG، WebP یا JPEG آپلود کنید.');
       return;
     }
 
@@ -177,7 +177,7 @@ export function AdminDesignPage() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/png, image/webp"
+                    accept="image/png, image/webp, image/jpeg"
                     onChange={handleFileChange}
                     className="hidden"
                   />

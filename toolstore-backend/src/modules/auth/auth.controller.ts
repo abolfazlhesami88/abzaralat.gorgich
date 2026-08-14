@@ -47,7 +47,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
-  @ApiOperation({ summary: 'ثبت‌نام سنتی کاربر با ایمیل' })
+  @ApiOperation({ summary: 'ثبت‌نام کاربر با ایمیل یا شماره موبایل' })
   async register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
@@ -58,7 +58,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'ورود سنتی کاربر با ایمیل و رمز' })
+  @ApiOperation({ summary: 'ورود کاربر با ایمیل یا شماره موبایل و رمز عبور' })
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,

@@ -19,12 +19,16 @@ import { Coupon } from '../modules/coupons/entities/coupon.entity';
 import { Wishlist } from '../modules/wishlist/entities/wishlist.entity';
 import { Notification } from '../modules/notifications/entities/notification.entity';
 
+import { SiteSetting } from '../modules/site-settings/entities/site-setting.entity';
+import { OtpCode } from '../modules/auth/entities/otp-code.entity';
+
 const entities = [
   User, Category, Brand,
   Product, ProductImage, ProductVariant, ProductSpec,
   Address, Cart, CartItem,
   Order, OrderItem,
   Review, Coupon, Wishlist, Notification,
+  SiteSetting, OtpCode,
 ];
 
 @Module({
@@ -42,7 +46,7 @@ const entities = [
         migrations: [__dirname + '/migrations/**/*.{ts,js}'],
         synchronize: config.get('DB_SYNCHRONIZE') === 'true',
         logging: config.get('DB_LOGGING') === 'true',
-        ssl: config.get('NODE_ENV') === 'production'
+        ssl: config.get('DB_SSL') === 'true'
           ? { rejectUnauthorized: false }
           : false,
       }),

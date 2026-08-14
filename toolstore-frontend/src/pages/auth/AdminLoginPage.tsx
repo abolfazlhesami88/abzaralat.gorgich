@@ -9,7 +9,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { AuthBrandPanel } from '../../components/auth/AuthBrandPanel';
 
 const schema = z.object({
-  email: z.string().email('فرمت ایمیل صحیح نیست'),
+  identifier: z.string().min(1, 'ایمیل یا شماره موبایل الزامی است'),
   password: z.string().min(1, 'رمز عبور الزامی است'),
 });
 
@@ -29,7 +29,10 @@ export function AdminLoginPage() {
   const onSubmit = async (data: FormData) => {
     setError('');
     try {
-      const res = await authApi.login(data);
+      const res = await authApi.login({
+        identifier: data.identifier.trim(),
+        password: data.password,
+      });
 
       if (res.user.role !== 'admin') {
         logout();
@@ -40,7 +43,14 @@ export function AdminLoginPage() {
       setAuth(res.user, res.accessToken);
       navigate('/admin', { replace: true });
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'خطا در ورود. لطفاً اطلاعات ادمین را بررسی کنید.');
+      const msg = err?.response?.data?.message;
+      setError(
+        Array.isArray(msg)
+          ? msg.join(' - ')
+          : typeof msg === 'string'
+          ? msg
+          : 'خطا در ورود. لطفاً اطلاعات ادمین را بررسی کنید.',
+      );
     }
   };
 
@@ -71,24 +81,24 @@ export function AdminLoginPage() {
               ورود مدیران سیستم
             </h1>
             <p className="text-sm text-[#8c8272] mt-2 font-normal">
-              لطفاً پست الکترونیک و رمز عبور مدیریتی خود را وارد نمایید
+              لطفاً ایمیل یا شماره موبایل و رمز عبور مدیریتی خود را وارد نمایید
             </p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* ایمیل ادمین */}
+            {/* شناسه مدیر (ایمیل یا شماره موبایل) */}
             <div>
               <label className="text-xs sm:text-sm font-bold text-[#221c12] block mb-1.5">
-                ایمیل مدیر *
+                ایمیل یا شماره موبایل
               </label>
               <input
-                {...register('email')}
-                type="email"
-                placeholder="admin@gorgich.com"
+                {...register('identifier')}
+                type="text"
+                placeholder="user@example.com یا 09123456789"
                 dir="ltr"
                 className="w-full h-11 sm:h-12 px-4 rounded-[13px] border border-[#ece4d3] bg-[#faf7f2] text-[#221c12] text-sm placeholder:text-[#8c8272]/50 shadow-[inset_0_2px_4px_rgba(34,28,18,0.04)] focus:outline-none focus:border-[#c79a4b] focus:bg-white focus:shadow-[0_0_14px_rgba(199,154,75,0.22)] transition-all duration-200"
               />
-              {errors.email && <p className="text-xs text-danger mt-1 font-medium">{errors.email.message}</p>}
+              {errors.identifier && <p className="text-xs text-danger mt-1 font-medium">{errors.identifier.message}</p>}
             </div>
 
             {/* رمز عبور ادمین */}
@@ -137,7 +147,7 @@ export function AdminLoginPage() {
           {/* توضیح امنیتی */}
           <div className="mt-8 pt-6 border-t border-[#ece4d3] text-center">
             <p className="text-xs text-[#8c8272] leading-relaxed">
-              🔒 این صفحه صرفاً برای مدیران سیستم ابزارآلات گرگیچ است. تمامی تلاش‌های ورود ثبت و پایش می‌شوند.
+              🔒 این صفحه صرفاً برای مدیران سیستم ابزارآلات گرگیج است. تمامی تلاش‌های ورود ثبت و پایش می‌شوند.
             </p>
           </div>
         </div>

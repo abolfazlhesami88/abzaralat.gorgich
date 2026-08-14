@@ -18,7 +18,7 @@ export function BrandStorySection() {
           </h2>
 
           <p className="text-[#8c8272] text-sm md:text-base leading-relaxed mb-8 font-normal max-w-2xl mx-auto">
-            مجموعه «ابزارآلات گرگیچ» با بیش از دو دهه تجربه تخصصی در تامین و توزیع تجهیزات برقی، شارژی و دستی، مرجع مطمئن انتخاب صنعتگران، تکنسین‌ها و استادکاران ایرانی است.
+            مجموعه «ابزارآلات گرگیج» با بیش از دو دهه تجربه تخصصی در تامین و توزیع تجهیزات برقی، شارژی و دستی، مرجع مطمئن انتخاب صنعتگران، تکنسین‌ها و استادکاران ایرانی است.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-[#ece4d3]">

@@ -2,8 +2,16 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SiteSetting } from './entities/site-setting.entity';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
+
+// FIX [Pillar 4 — Upload Security]: نگاشت MIME به extension
+// extension از MIME type تعیین می‌شود — نه از file.originalname
+const ALLOWED_HERO_MIME: Record<string, string> = {
+  'image/png':  '.png',
+  'image/webp': '.webp',
+  'image/jpeg': '.jpg',
+};
 
 @Injectable()
 export class SiteSettingsService {
@@ -47,15 +55,16 @@ export class SiteSettingsService {
       throw new BadRequestException('هیچ فایلی ارسال نشده است');
     }
 
-    // اعتبارسنجی فرمت شفاف (فقط PNG یا WebP)
-    const allowedMimeTypes = ['image/png', 'image/webp'];
-    if (!allowedMimeTypes.includes(file.mimetype)) {
+    // FIX [Pillar 4 — Upload Security]: اعتبارسنجی MIME type
+    const ext = ALLOWED_HERO_MIME[file.mimetype];
+    if (!ext) {
       throw new BadRequestException(
-        'این فرمت از پس‌زمینه شفاف پشتیبانی نمی‌کند، لطفاً فایل PNG یا WebP آپلود کنید',
+        'فرمت فایل مجاز نیست. لطفاً فایل PNG، WebP یا JPEG آپلود کنید',
       );
     }
 
-    // حداکثر حجم ۵ مگابایت
+    // FIX [Pillar 4]: حداکثر حجم ۵ مگابایت — این بررسی در service هم انجام می‌شود
+    // حتی اگر در FileInterceptor تنظیم شده باشد (دفاع لایه‌ای)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       throw new BadRequestException('حجم تصویر نباید بیشتر از ۵ مگابایت باشد');
@@ -63,14 +72,21 @@ export class SiteSettingsService {
 
     // ذخیره فایل در فولدر uploads/design
     const uploadDir = path.join(process.cwd(), 'uploads', 'design');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
 
-    const filename = `hero_image_${Date.now()}${path.extname(file.originalname).toLowerCase()}`;
+    // FIX [Pillar 4 — Upload Security]:
+    // ۱. تابع async: استفاده از fs.promises به جای fs.writeFileSync sync
+    //    (قبلاً writeFileSync استفاده می‌شد که event loop را بلاک می‌کرد)
+    // ۲. extension از MIME type تعیین می‌شود — نه از originalname
+    await fs.mkdir(uploadDir, { recursive: true });
+
+    // نام فایل بر اساس timestamp — بدون هیچ ورودی از کلاینت
+    const filename = `hero_image_${Date.now()}${ext}`;
+
+    // path traversal prevention: فقط به uploadDir می‌نویسیم
     const filePath = path.join(uploadDir, filename);
 
-    fs.writeFileSync(filePath, file.buffer);
+    // FIX: async write — دیگر event loop بلاک نمی‌شود
+    await fs.writeFile(filePath, file.buffer);
 
     const relativeUrl = `/uploads/design/${filename}`;
     await this.setSetting('hero_image_url', relativeUrl);

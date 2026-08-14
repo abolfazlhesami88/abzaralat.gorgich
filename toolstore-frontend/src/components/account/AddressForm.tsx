@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'react-hot-toast';
 import { useAddresses, useCreateAddress, useUpdateAddress } from '../../hooks/useAddresses';
 
 const schema = z.object({
@@ -16,7 +17,7 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-export function AddressForm({ addressId, onSuccess, onCancel }: { addressId?: string | null, onSuccess: () => void, onCancel: () => void }) {
+export function AddressForm({ addressId, onSuccess, onCancel }: { addressId?: string | null; onSuccess: () => void; onCancel: () => void }) {
   const { data: addresses } = useAddresses();
   const createAddress = useCreateAddress();
   const updateAddress = useUpdateAddress();
@@ -41,12 +42,21 @@ export function AddressForm({ addressId, onSuccess, onCancel }: { addressId?: st
     try {
       if (addressId) {
         await updateAddress.mutateAsync({ id: addressId, data: { ...data, label: data.label || null } });
+        toast.success('آدرس با موفقیت به‌روزرسانی شد');
       } else {
         await createAddress.mutateAsync({ ...data, label: data.label || null });
+        toast.success('آدرس جدید با موفقیت ثبت شد');
       }
       onSuccess();
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      const serverMessage = err?.response?.data?.message;
+      const displayMessage = Array.isArray(serverMessage)
+        ? serverMessage.join(' - ')
+        : typeof serverMessage === 'string'
+        ? serverMessage
+        : 'خطا در ثبت آدرس. لطفاً دوباره تلاش کنید.';
+      
+      toast.error(displayMessage);
     }
   };
 

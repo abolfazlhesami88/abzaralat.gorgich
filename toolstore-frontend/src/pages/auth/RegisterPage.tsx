@@ -1,18 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Smartphone, CheckCircle, ArrowRight, RotateCw, KeyRound } from 'lucide-react';
+import { Smartphone, CheckCircle, ArrowRight, RotateCw, KeyRound, UserPlus } from 'lucide-react';
 import { authApi } from '../../api/auth.api';
 import { useAuthStore } from '../../stores/authStore';
 import { AuthBrandPanel } from '../../components/auth/AuthBrandPanel';
 import { toast } from 'react-hot-toast';
 
 export function RegisterPage() {
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [step, setStep] = useState<'phone' | 'otp' | 'password'>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(60);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // ثبت‌نام یکپارچه شناسه (ایمیل یا شماره موبایل) و پسورد
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -74,6 +80,41 @@ export function RegisterPage() {
     }
   };
 
+  const handlePasswordRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    const cleanIdentifier = identifier.trim();
+    if (!cleanIdentifier) {
+      setError('لطفاً ایمیل یا شماره موبایل خود را وارد کنید');
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      setError('رمز عبور باید حداقل ۶ کاراکتر باشد');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await authApi.register({
+        identifier: cleanIdentifier,
+        password,
+        firstName: firstName.trim() || undefined,
+        lastName: lastName.trim() || undefined,
+      });
+
+      setAuth(res.user, res.accessToken);
+      toast.success('ثبت‌نام با موفقیت انجام شد');
+      navigate('/account', { replace: true });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      setError(Array.isArray(msg) ? msg.join(' - ') : msg ?? 'خطا در ثبت‌نام حساب کاربری');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otp];
@@ -110,6 +151,7 @@ export function RegisterPage() {
         </Link>
 
         <div className="w-full max-w-md my-auto py-6">
+          {/* ورود سریع با پیامک */}
           {step === 'phone' && (
             <div>
               <div className="text-center mb-8">
@@ -117,7 +159,7 @@ export function RegisterPage() {
                   <Smartphone size={26} />
                 </div>
                 <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#221c12]">
-                  عضویت سریع در ابزارآلات گرگیچ
+                  عضویت سریع در ابزارآلات گرگیج
                 </h1>
                 <p className="text-sm text-[#8c8272] mt-2 font-normal">
                   با وارد کردن شماره موبایل، حساب جدید برای شما به صورت خودکار ساخته می‌شود
@@ -150,7 +192,15 @@ export function RegisterPage() {
                 </button>
               </form>
 
-              <div className="mt-8 pt-6 border-t border-[#ece4d3] text-center">
+              <div className="mt-8 pt-6 border-t border-[#ece4d3] text-center space-y-3">
+                <button
+                  type="button"
+                  onClick={() => { setStep('password'); setError(''); }}
+                  className="text-xs font-bold text-[#a67d34] hover:underline block mx-auto"
+                >
+                  ثبت‌نام با ایمیل یا شماره موبایل و تعیین رمز عبور
+                </button>
+
                 <p className="text-sm text-[#8c8272]">
                   قبلاً ثبت‌نام کرده‌اید؟{' '}
                   <Link to="/login" className="text-[#a67d34] font-extrabold hover:underline">
@@ -161,6 +211,7 @@ export function RegisterPage() {
             </div>
           )}
 
+          {/* مرحله تأیید OTP */}
           {step === 'otp' && (
             <div>
               <div className="text-center mb-8">
@@ -221,6 +272,93 @@ export function RegisterPage() {
                 <CheckCircle size={18} />
                 <span>تکمیل ساخت حساب و ورود</span>
               </button>
+            </div>
+          )}
+
+          {/* ثبت‌نام با رمز عبور و شناسه یکپارچه */}
+          {step === 'password' && (
+            <div>
+              <div className="text-center mb-8">
+                <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#221c12]">
+                  ساخت حساب کاربری
+                </h1>
+                <p className="text-sm text-[#8c8272] mt-2 font-normal">
+                  ایمیل یا شماره موبایل به همراه اطلاعات اولیه خود را وارد نمایید
+                </p>
+              </div>
+
+              <form onSubmit={handlePasswordRegister} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-[#221c12] block mb-1">نام (اختیاری)</label>
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="علی"
+                      className="w-full h-11 px-3 rounded-[12px] border border-[#ece4d3] bg-[#faf7f2] text-[#221c12] text-sm focus:outline-none focus:border-[#c79a4b]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-[#221c12] block mb-1">نام خانوادگی (اختیاری)</label>
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="محمدی"
+                      className="w-full h-11 px-3 rounded-[12px] border border-[#ece4d3] bg-[#faf7f2] text-[#221c12] text-sm focus:outline-none focus:border-[#c79a4b]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs sm:text-sm font-bold text-[#221c12] block mb-1.5">
+                    ایمیل یا شماره موبایل
+                  </label>
+                  <input
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="user@example.com یا 09123456789"
+                    dir="ltr"
+                    className="w-full h-12 px-4 rounded-[13px] border border-[#ece4d3] bg-[#faf7f2] text-[#221c12] text-sm shadow-[inset_0_2px_4px_rgba(34,28,18,0.04)] focus:outline-none focus:border-[#c79a4b]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs sm:text-sm font-bold text-[#221c12] block mb-1.5">
+                    رمز عبور *
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="حداقل ۶ کاراکتر"
+                    dir="ltr"
+                    className="w-full h-12 px-4 rounded-[13px] border border-[#ece4d3] bg-[#faf7f2] text-[#221c12] text-sm shadow-[inset_0_2px_4px_rgba(34,28,18,0.04)] focus:outline-none focus:border-[#c79a4b]"
+                  />
+                </div>
+
+                {error && <p className="text-xs text-danger font-medium bg-danger/10 p-2.5 rounded-[10px]">{error}</p>}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-12 bg-gradient-to-r from-[#c79a4b] via-[#d9b869] to-[#c79a4b] text-[#221c12] font-extrabold text-sm rounded-[13px] shadow-md flex items-center justify-center gap-2"
+                >
+                  <UserPlus size={18} />
+                  <span>{loading ? 'در حال ثبت‌نام...' : 'تکمیل ثبت‌نام'}</span>
+                </button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <button
+                  onClick={() => { setStep('phone'); setError(''); }}
+                  className="text-xs font-bold text-[#a67d34] hover:underline"
+                >
+                  بازگشت به عضویت سریع با شماره موبایل
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import { Product } from '../../products/entities/product.entity';
 import { ProductImage } from '../../products/entities/product-image.entity';
 import { ProductSpec } from '../../products/entities/product-spec.entity';
@@ -9,6 +9,7 @@ import slugify from 'slugify';
 import { paginate } from '../../../common/dto/pagination.dto';
 import { PAGINATION } from '../../../common/constants/app.constants';
 import { CreateProductDto } from './dto/create-product.dto';
+import { BulkEditDto, BulkActionType } from './dto/bulk-update.dto';
 
 export interface AdminProductQuery {
   page?: number;
@@ -26,6 +27,7 @@ export class AdminProductsService {
     @InjectRepository(ProductImage) private readonly imageRepo: Repository<ProductImage>,
     @InjectRepository(ProductSpec) private readonly specRepo: Repository<ProductSpec>,
     @InjectRepository(ProductVariant) private readonly variantRepo: Repository<ProductVariant>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAll(query: AdminProductQuery) {
@@ -106,7 +108,7 @@ export class AdminProductsService {
     Object.assign(product, productData);
     await this.productRepo.save(product);
 
-    // اگر specs داده شده، همه قبلیها را پاک و دوباره ذخیره کن
+    // اگر specs داده شده، همه قبلی‌ها را پاک و دوباره ذخیره کن
     if (specs !== undefined) {
       await this.specRepo.delete({ productId: id });
       if (specs.length) {
@@ -140,13 +142,12 @@ export class AdminProductsService {
       await this.imageRepo.update({ productId }, { isPrimary: false });
     }
 
-    const image = this.imageRepo.create({ 
-      productId, 
+    const image = this.imageRepo.create({
+      productId,
       url: imageData.url,
       filename: imageData.filename,
-      originalName: imageData.originalName,
       path: imageData.path,
-      isPrimary 
+      isPrimary,
     });
     return this.imageRepo.save(image);
   }
@@ -164,7 +165,7 @@ export class AdminProductsService {
         const uploadDir = process.env.UPLOAD_DIR || './uploads';
         const baseName = path.parse(image.filename).name;
         const dir = path.join(uploadDir, 'products', image.productId);
-        
+
         await fs.unlink(path.join(dir, `${baseName}-thumbnail.webp`)).catch(() => {});
         await fs.unlink(path.join(dir, `${baseName}-medium.webp`)).catch(() => {});
         await fs.unlink(path.join(dir, `${baseName}-original.webp`)).catch(() => {});
@@ -172,14 +173,104 @@ export class AdminProductsService {
     }
   }
 
+  // FIX [Pillar 5 — N+1 Query]:
+  // قبلاً: یک UPDATE جداگانه به ازای هر imageId در حلقه for => N query
+  // حالا: یک query واحد برای reset همه isPrimary + N query برای sortOrder
+  // بهبود اضافی: از Promise.all برای موازی‌سازی update های sortOrder استفاده می‌شود
   async reorderImages(productId: string, imageIds: string[]) {
-    for (let i = 0; i < imageIds.length; i++) {
-      await this.imageRepo.update({ id: imageIds[i], productId }, { sortOrder: i, isPrimary: i === 0 });
-    }
+    if (!imageIds?.length) return;
+
+    // ۱. یک query: همه imageهای این محصول را از حالت primary خارج کن
+    await this.imageRepo.update({ productId }, { isPrimary: false });
+
+    // ۲. موازی: تمام sortOrder ها را به صورت همزمان آپدیت کن
+    // (هر update مستقل است، نیازی به sequential نیست)
+    await Promise.all(
+      imageIds.map((imgId, index) =>
+        this.imageRepo.update(
+          { id: imgId, productId }, // محدودیت به productId برای جلوگیری از IDOR
+          { sortOrder: index, isPrimary: index === 0 },
+        ),
+      ),
+    );
   }
 
   async bulkUpdateStatus(ids: string[], status: string) {
-    await this.productRepo.update(ids, { status: status as any });
+    if (!ids?.length) return { updated: 0 };
+    // FIX [Pillar 5 — Performance]: استفاده از In() برای یک query واحد
+    await this.productRepo.update({ id: In(ids) }, { status: status as any });
     return { updated: ids.length };
+  }
+
+  async bulkEdit(dto: BulkEditDto) {
+    const { productIds, actionType, value } = dto;
+    if (!productIds?.length) return { updated: 0 };
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Lock rows for pessimistic write to prevent concurrent modifications
+      const products = await queryRunner.manager.find(Product, {
+        where: { id: In(productIds) },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!products.length) {
+        await queryRunner.rollbackTransaction();
+        return { updated: 0 };
+      }
+
+      for (const product of products) {
+        switch (actionType) {
+          case BulkActionType.PRICE_PERCENT_INC: {
+            const inc = product.price * (value / 100);
+            product.price = Math.round((Number(product.price) + inc) / 1000) * 1000;
+            break;
+          }
+          case BulkActionType.PRICE_PERCENT_DEC: {
+            const dec = product.price * (value / 100);
+            product.price = Math.round((Number(product.price) - dec) / 1000) * 1000;
+            break;
+          }
+          case BulkActionType.PRICE_FIXED_INC: {
+            product.price = Number(product.price) + value;
+            break;
+          }
+          case BulkActionType.PRICE_FIXED_DEC: {
+            product.price = Number(product.price) - value;
+            break;
+          }
+          case BulkActionType.STOCK_ADD: {
+            product.stock = Number(product.stock) + value;
+            break;
+          }
+          case BulkActionType.STOCK_SET: {
+            product.stock = value;
+            break;
+          }
+        }
+
+        // Apply constraints
+        if (product.price < 0) product.price = 0;
+        if (product.stock < 0) product.stock = 0;
+
+        // Reset compareAtPrice if current price exceeds it
+        if (product.compareAtPrice && product.price > product.compareAtPrice) {
+          product.compareAtPrice = null;
+        }
+      }
+
+      await queryRunner.manager.save(products);
+      await queryRunner.commitTransaction();
+
+      return { updated: products.length };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

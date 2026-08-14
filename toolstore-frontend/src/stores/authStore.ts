@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { apiClient } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
+import { queryClient } from '../api/queryClient';
+import { useCartStore } from './cartStore';
 
 interface User {
   id: string;
@@ -33,7 +35,28 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, accessToken) =>
         set({ user, accessToken, isAuthenticated: true }),
       setAccessToken: (accessToken) => set({ accessToken }),
-      logout: () => set({ user: null, accessToken: null, isAuthenticated: false }),
+      logout: () => {
+        // 0. ابطال رفرش توکن در سمت سرور (بدون انتظار — fire-and-forget)
+        apiClient.post(ENDPOINTS.AUTH.LOGOUT).catch(() => {});
+
+        // 1. پاک‌سازی کامل استیت احراز هویت
+        set({ user: null, accessToken: null, isAuthenticated: false });
+        
+        // 2. پاک‌سازی کامل حافظه کش React Query (پیشگیری از افشای اطلاعات کاربران قبلی)
+        queryClient.clear();
+
+        // 3. پاک‌سازی استیت سبد خرید و مابقی استورها
+        useCartStore.getState().clearLocalCart();
+
+        // 4. حذف داده‌های حساس از localStorage
+        try {
+          localStorage.removeItem('ts-session-id');
+          localStorage.removeItem('auth-storage');
+          localStorage.removeItem('toolstore-cart');
+        } catch {
+          // در صورت بلاک بودن localStorage خطا صادر نشود
+        }
+      },
       initAuth: async () => {
         if (!get().isAuthenticated) {
           set({ isInitializing: false });
@@ -49,20 +72,12 @@ export const useAuthStore = create<AuthState>()(
               isInitializing: false,
             });
           } else {
-            set({
-              user: null,
-              accessToken: null,
-              isAuthenticated: false,
-              isInitializing: false,
-            });
+            get().logout();
+            set({ isInitializing: false });
           }
         } catch {
-          set({
-            user: null,
-            accessToken: null,
-            isAuthenticated: false,
-            isInitializing: false,
-          });
+          get().logout();
+          set({ isInitializing: false });
         }
       },
     }),

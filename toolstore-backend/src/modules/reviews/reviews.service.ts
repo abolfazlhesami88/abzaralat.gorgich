@@ -45,7 +45,7 @@ export class ReviewsService {
       createdAt: review.createdAt,
       userName: review.user
         ? `${review.user.firstName ?? ''} ${review.user.lastName?.[0] ?? ''}`.trim() || 'کاربر ToolStore'
-        : 'کاربر حذفشده',
+        : 'کاربر حذف‌شده',
     }));
 
     return paginate(sanitized, total, page, limit);
@@ -75,7 +75,7 @@ export class ReviewsService {
     };
   }
 
-  // ثبت نظر جدید — فقط کاربران لاگینکرده
+  // ثبت نظر جدید — فقط کاربران لاگین‌کرده
   async create(userId: string, dto: CreateReviewDto) {
     const product = await this.productRepo.findOne({ where: { id: dto.productId } });
     if (!product) throw new NotFoundException('محصول یافت نشد');
@@ -85,7 +85,7 @@ export class ReviewsService {
       where: { productId: dto.productId, userId },
     });
     if (existing) {
-      throw new ConflictException('شما قبلاً برای این محصول نظر ثبت کردهاید');
+      throw new ConflictException('شما قبلاً برای این محصول نظر ثبت کرده‌اید');
     }
 
     // بررسی خرید واقعی برای تیک "خرید تأییدشده"
@@ -119,21 +119,33 @@ export class ReviewsService {
       title: dto.title,
       body: dto.body,
       isVerifiedPurchase,
-      isApproved: false, // باید توسط ادمین تأیید شود (مرحله ۸)
+      isApproved: false, // باید توسط ادمین تأیید شود
     });
 
     return this.reviewRepo.save(review);
   }
 
-  async markHelpful(reviewId: string) {
+  // FIX [Pillar 3 — Authentication]:
+  // markHelpful نیازمند userId است تا:
+  // ۱. جلوگیری از فراخوانی anonymous (باید در Controller هم guard باشد)
+  // ۲. جلوگیری از vote مکرر یک کاربر (بررسی با helpfulUsers)
+  // توجه: چون Review entity فیلد helpfulUsers ندارد، از روش ساده‌تر
+  // (نیازمند userId در Controller) استفاده می‌شود و logic ساده باقی می‌ماند.
+  // برای سیستم کامل‌تر، یک جدول review_helpful_votes باید اضافه شود.
+  async markHelpful(reviewId: string, userId: string) {
     const review = await this.reviewRepo.findOne({ where: { id: reviewId } });
     if (!review) throw new NotFoundException('نظر یافت نشد');
+
+    // FIX: کاربر نمی‌تواند نظر خودش را مفید علامت بزند
+    if (review.userId === userId) {
+      throw new ForbiddenException('نمی‌توانید نظر خودتان را مفید علامت بزنید');
+    }
 
     review.helpfulCount += 1;
     return this.reviewRepo.save(review);
   }
 
-  // ─── این متد بعد از تأیید/رد نظر در مرحله ۸ صدا زده میشود ─────────
+  // ─── این متد بعد از تأیید/رد نظر در مرحله ۸ صدا زده می‌شود ─────────────────
   // محاسبه مجدد averageRating و reviewCount محصول
   async recalculateProductRating(productId: string) {
     const result = await this.reviewRepo

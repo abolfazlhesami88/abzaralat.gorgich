@@ -40,15 +40,21 @@ export class ReviewsController {
     @Param('slug') slug: string,
     @Body() dto: Omit<CreateReviewDto, 'productId'> & { productId?: string },
   ) {
-    // productId از body یا از slug resolve میشود — اینجا سادهسازی شده، در پیادهسازی واقعی از productId در body استفاده کن
     return { data: await this.reviewsService.create(userId, dto as CreateReviewDto) };
   }
 
+  // FIX [Pillar 3 — Authentication]:
+  // markHelpful حالا نیازمند JwtAuthGuard است — قبلاً Public بود و هر کسی
+  // می‌توانست بی‌نهایت بار helpfulCount را افزایش دهد.
+  // علاوه بر این، userId به service پاس می‌شود تا self-vote جلوگیری شود.
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post('reviews/:id/helpful')
-  @ApiOperation({ summary: 'علامتگذاری نظر بهعنوان مفید' })
-  async markHelpful(@Param('id') id: string) {
-    return { data: await this.reviewsService.markHelpful(id) };
+  @ApiOperation({ summary: 'علامت‌گذاری نظر به‌عنوان مفید (نیازمند لاگین)' })
+  async markHelpful(
+    @Param('id') id: string,
+    @CurrentUser('sub') userId: string,
+  ) {
+    return { data: await this.reviewsService.markHelpful(id, userId) };
   }
 }

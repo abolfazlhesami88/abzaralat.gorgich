@@ -1,67 +1,68 @@
+version: '3.8'
+
 services:
-  db:
+  postgres:
     image: postgres:15-alpine
     container_name: toolstore_db
     restart: always
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: rootpassword
-      POSTGRES_DB: toolstore
-    ports:
-      - '5432:5432'
+      POSTGRES_USER: ${DB_USERNAME:-root}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-rootpassword}
+      POSTGRES_DB: ${DB_NAME:-toolstore}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root -d toolstore"]
-      interval: 2s
-      timeout: 2s
-      retries: 10
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   backend:
     build:
       context: ./toolstore-backend
       dockerfile: Dockerfile
     container_name: toolstore_backend
-    restart: unless-stopped
-    ports:
-      - '3000:3000'
+    restart: always
     environment:
-      - DB_HOST=db
+      - NODE_ENV=production
+      - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USERNAME=root
-      - DB_PASSWORD=rootpassword
-      - DB_NAME=toolstore
-      - JWT_SECRET=toolstore_super_secret_key_2024
-      - JWT_EXPIRES_IN=1h
-      - JWT_REFRESH_SECRET=toolstore_refresh_secret_key_2024
-      - JWT_REFRESH_EXPIRES_IN=7d
-      - PORT=3000
+      - DB_USERNAME=${DB_USERNAME:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-rootpassword}
+      - DB_NAME=${DB_NAME:-toolstore}
       - DB_SYNCHRONIZE=true
-      - FRONTEND_URL=http://localhost:5173
-    depends_on:
-      db:
-        condition: service_healthy
-    command: npm run start:dev
+      - DB_SSL=false
+      - JWT_SECRET=${JWT_SECRET:-toolstore_super_secret_key_2024}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-toolstore_refresh_secret_key_2024}
+      - JWT_ACCESS_EXPIRES=15m
+      - JWT_REFRESH_EXPIRES=7d
+      - KAVENEGAR_API_KEY=${KAVENEGAR_API_KEY}
+      - FRONTEND_URL=https://gorgijtools.ir
+      - PORT=3000
+    ports:
+      - "3000:3000"
     volumes:
-      - ./toolstore-backend/src:/usr/src/app/src
-      - ./toolstore-backend/uploads:/usr/src/app/uploads
+      - ./uploads:/usr/src/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend:
     build:
       context: ./toolstore-frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
     container_name: toolstore_frontend
-    restart: unless-stopped
+    restart: always
     ports:
-      - '5173:5173'
-    environment:
-      - VITE_API_URL=http://localhost:3000/api
-      - VITE_API_BASE_URL=http://localhost:3000/api
+      - "80:80"
+    volumes:
+      - ./uploads:/usr/share/nginx/html/uploads
     depends_on:
       - backend
-    volumes:
-      - ./toolstore-frontend/src:/usr/src/app/src
-      - ./toolstore-frontend/public:/usr/src/app/public
 
 volumes:
   postgres_data:

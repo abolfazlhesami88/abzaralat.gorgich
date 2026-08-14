@@ -29,10 +29,10 @@ export function Navbar() {
             {/* نام برند و تگ‌لاین لاتین */}
             <div className="flex flex-col">
               <span className="font-display text-xl sm:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-[#221c12] via-[#a67d34] to-[#c79a4b] bg-clip-text text-transparent">
-                ابزارآلات گرگیچ
+                ابزارآلات گرگیج
               </span>
               <span className="hidden sm:block text-[9px] font-extrabold text-[#c79a4b] tracking-[0.25em] uppercase -mt-0.5 opacity-95">
-                GORGICH TOOLS
+                GORGIJ TOOLS
               </span>
             </div>
           </Link>

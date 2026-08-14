@@ -66,6 +66,7 @@ export const ENDPOINTS = {
       CREATE: '/admin/products',
       UPDATE: (id: string) => `/admin/products/${id}`,
       DELETE: (id: string) => `/admin/products/${id}`,
+      BULK_EDIT: '/admin/products/bulk-edit',
       UPLOAD_IMAGE: (id: string) => `/admin/products/${id}/images`,
       DELETE_IMAGE: (id: string, imageId: string) => `/admin/products/${id}/images/${imageId}`,
       REORDER_IMAGES: (id: string) => `/admin/products/${id}/images/reorder`,

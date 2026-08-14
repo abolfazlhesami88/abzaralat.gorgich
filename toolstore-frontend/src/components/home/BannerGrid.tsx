@@ -28,7 +28,7 @@ const BANNERS = [
   },
   {
     id: 4,
-    title: 'ضمانت ۱۰۰٪ اصالت گرگیچ',
+    title: 'ضمانت ۱۰۰٪ اصالت گرگیج',
     subtitle: '۷ روز مهلت بازگشت + ارسال فوری سراسری',
     icon: ShieldCheck,
     gradient: 'from-[#7a6d57] via-[#5c5243] to-[#4a4136]',

@@ -1,16 +1,19 @@
 import { IsEmail, IsString, MinLength, MaxLength, Matches, IsOptional } from 'class-validator';
 
 export class CreateUserDto {
+  @IsOptional()
   @IsEmail({}, { message: 'فرمت ایمیل صحیح نیست' })
-  email: string;
+  email?: string | null;
 
+  @IsOptional()
   @IsString()
-  @MinLength(8, { message: 'رمز عبور باید حداقل ۸ کاراکتر باشد' })
+  phone?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(6, { message: 'رمز عبور باید حداقل ۶ کاراکتر باشد' })
   @MaxLength(50, { message: 'رمز عبور نباید بیشتر از ۵۰ کاراکتر باشد' })
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message: 'رمز عبور باید شامل حروف بزرگ، کوچک و عدد باشد',
-  })
-  passwordHash: string; // Will be hashed in the entity hook
+  passwordHash?: string | null; // Will be hashed in the entity hook
 
   @IsOptional()
   @IsString()

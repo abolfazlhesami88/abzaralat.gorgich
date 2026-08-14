@@ -6,8 +6,10 @@ import { Brand } from '../../modules/brands/entities/brand.entity';
 export async function seedProducts(dataSource: DataSource) {
   const productRepo = dataSource.getRepository(Product);
 
-  // ۱. آپدیت یکباره محصولات موجود در دیتابیس که روی draft مانده‌اند
+  // ۱. آپدیت یکباره محصولات موجود در دیتابیس که روی draft مانده‌اند، موجودی صفر دارند یا تخفیف دارند
   await dataSource.query("UPDATE products SET status = 'active' WHERE status = 'draft'").catch(() => {});
+  await dataSource.query("UPDATE products SET stock = floor(random() * 80 + 15)::int WHERE stock <= 0").catch(() => {});
+  await dataSource.query("UPDATE products SET price = GREATEST(price, COALESCE(compare_at_price, price)), compare_at_price = NULL WHERE compare_at_price IS NOT NULL").catch(() => {});
 
   const existing = await productRepo.count();
   if (existing > 0) return;
@@ -36,8 +38,8 @@ export async function seedProducts(dataSource: DataSource) {
       sku: 'BSH-GSR18V55',
       shortDescription: 'دریل پیچگوشتی شارژی حرفهای با باتری ۱۸ ولت',
       description: `دریل شارژی بوش GSR 18V-55 با موتور قدرتمند ۵۵ نیوتون متر گشتاور، مناسب برای تمام کارهای حرفهای ساختمانی و صنعتی است. سیستم هوشمند Electronic Cell Protection از باتری در برابر اضافهبار محافظت میکند.`,
-      price: 45000000,
-      compareAtPrice: 52000000,
+      price: 52000000,
+      compareAtPrice: null,
       stock: 25,
       category: drills,
       brand: bosch,
@@ -84,8 +86,8 @@ export async function seedProducts(dataSource: DataSource) {
       slug: 'dewalt-dcs391',
       sku: 'DWT-DCS391',
       shortDescription: 'اره دیسکی شارژی ۱۸۵ میلیمتر با باتری ۲۰ ولت',
-      price: 78000000,
-      compareAtPrice: 89000000,
+      price: 89000000,
+      compareAtPrice: null,
       stock: 8,
       category: saws,
       brand: dewalt,
@@ -131,8 +133,8 @@ export async function seedProducts(dataSource: DataSource) {
       slug: 'stanley-adjustable-wrench-10',
       sku: 'STN-AW10',
       shortDescription: 'آچار فرانسه استنلی با فک کروم-وانادیوم ۲۵۰ میلیمتری',
-      price: 8500000,
-      compareAtPrice: 10000000,
+      price: 10000000,
+      compareAtPrice: null,
       stock: 45,
       category: wrenches,
       brand: stanley,
@@ -154,8 +156,8 @@ export async function seedProducts(dataSource: DataSource) {
       slug: 'bahco-s22-wrench-set',
       sku: 'BHC-S22',
       shortDescription: 'ست ۲۲ عددی آچار رینگ یکسر تخت استیل Bahco',
-      price: 95000000,
-      compareAtPrice: 110000000,
+      price: 110000000,
+      compareAtPrice: null,
       stock: 12,
       category: wrenches,
       brand: bahco,
@@ -199,8 +201,8 @@ export async function seedProducts(dataSource: DataSource) {
       slug: 'bosch-gll-3-80',
       sku: 'BSH-GLL380',
       shortDescription: 'تراز لیزری ۳ خطه ۳۶۰ درجه برد ۸۰ متر',
-      price: 185000000,
-      compareAtPrice: 210000000,
+      price: 210000000,
+      compareAtPrice: null,
       stock: 7,
       category: levels,
       brand: bosch,
@@ -223,8 +225,8 @@ export async function seedProducts(dataSource: DataSource) {
       slug: 'dewalt-dwe402',
       sku: 'DWT-DWE402',
       shortDescription: 'فرز آنگلی ۱۱۵ میلیمتری ۱۰۰۰ وات دیوالت',
-      price: 38000000,
-      compareAtPrice: 45000000,
+      price: 45000000,
+      compareAtPrice: null,
       stock: 18,
       category: grinders,
       brand: dewalt,
@@ -246,8 +248,8 @@ export async function seedProducts(dataSource: DataSource) {
       slug: 'stanley-safety-gloves-s',
       sku: 'STN-GLV-S',
       shortDescription: 'دستکش ایمنی سطح مقاومت بالا مخصوص کارهای سنگین',
-      price: 4500000,
-      compareAtPrice: 5000000,
+      price: 5000000,
+      compareAtPrice: null,
       stock: 100,
       category: gloves,
       brand: stanley,

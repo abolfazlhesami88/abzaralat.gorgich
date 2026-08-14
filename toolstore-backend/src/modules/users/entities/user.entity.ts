@@ -13,24 +13,24 @@ import { Notification } from '../../notifications/entities/notification.entity';
 @Entity('users')
 export class User extends BaseEntity {
   @Index()
-  @Column({ unique: true, length: 255, nullable: true })
+  @Column({ type: 'varchar', unique: true, length: 255, nullable: true })
   email: string | null;
 
-  @Column({ name: 'password_hash', nullable: true })
+  @Column({ name: 'password_hash', type: 'varchar', nullable: true })
   @Exclude() // هیچوقت در response برنمیگردد
   passwordHash: string | null;
 
-  @Column({ name: 'first_name', length: 100, nullable: true })
+  @Column({ name: 'first_name', type: 'varchar', length: 100, nullable: true })
   firstName: string | null;
 
-  @Column({ name: 'last_name', length: 100, nullable: true })
+  @Column({ name: 'last_name', type: 'varchar', length: 100, nullable: true })
   lastName: string | null;
 
   @Index()
-  @Column({ length: 20, nullable: true, unique: true })
+  @Column({ type: 'varchar', length: 20, nullable: true, unique: true })
   phone: string | null;
 
-  @Column({ name: 'avatar_url', nullable: true })
+  @Column({ name: 'avatar_url', type: 'varchar', nullable: true })
   avatarUrl: string | null;
 
   @Column({
@@ -82,6 +82,6 @@ export class User extends BaseEntity {
   }
 
   get fullName(): string {
-    return [this.firstName, this.lastName].filter(Boolean).join(' ') || this.phone || 'کاربر گرگیچ';
+    return [this.firstName, this.lastName].filter(Boolean).join(' ') || this.phone || 'کاربر گرگیج';
   }
 }

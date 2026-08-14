@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, BadRequestException,
+  Injectable, NotFoundException, BadRequestException, ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -58,23 +58,31 @@ export class CartService {
     const product = await this.productRepo.findOne({ where: { id: dto.productId, status: 'active' as any } });
     if (!product) throw new NotFoundException('محصول یافت نشد یا در دسترس نیست');
 
+    // FIX [Pillar 5 — N+1]: در صورت وجود variantId، فقط یک بار variant را fetch کن
+    // (قبلاً دو بار: یک بار برای stock، یک بار برای priceModifier)
+    let variant: ProductVariant | null = null;
+    if (dto.variantId) {
+      variant = await this.variantRepo.findOne({ where: { id: dto.variantId, productId: product.id } });
+      if (!variant) {
+        throw new NotFoundException('تنوع انتخابی محصول یافت نشد');
+      }
+    }
+
     // بررسی موجودی
-    const availableStock = dto.variantId
-      ? (await this.variantRepo.findOne({ where: { id: dto.variantId } }))?.stock ?? 0
-      : product.stock;
+    const availableStock = variant ? variant.stock : product.stock;
 
     if (availableStock < dto.quantity) {
       throw new BadRequestException(`تنها ${availableStock} عدد از این محصول موجود است`);
     }
 
+    const unitPrice = variant
+      ? product.price + (variant.priceModifier ?? 0)
+      : product.price;
+
     // بررسی آیا این محصول/variant قبلاً در سبد است
     const existingItem = cart.items?.find(
       (item) => item.productId === dto.productId && item.variantId === (dto.variantId ?? null),
     );
-
-    const unitPrice = dto.variantId
-      ? product.price + ((await this.variantRepo.findOne({ where: { id: dto.variantId } }))?.priceModifier ?? 0)
-      : product.price;
 
     if (existingItem) {
       const newQty = existingItem.quantity + dto.quantity;
@@ -100,6 +108,8 @@ export class CartService {
   async updateItem(itemId: string, quantity: number, userId?: string, sessionId?: string) {
     const cart = await this.getOrCreate(userId, sessionId);
 
+    // FIX [Pillar 3 — IDOR]: پیدا کردن آیتم از داخل cart کاربر (نه مستقیم از DB)
+    // تضمین می‌کند که فقط آیتم‌های سبد خود کاربر قابل تغییر هستند
     const item = cart.items?.find((i) => i.id === itemId);
     if (!item) throw new NotFoundException('آیتم در سبد خرید یافت نشد');
 
@@ -107,14 +117,18 @@ export class CartService {
       return this.removeItem(itemId, userId, sessionId);
     }
 
-    // بررسی مجدد موجودی
-    const product = await this.productRepo.findOne({ where: { id: item.productId } });
-    const stock = item.variantId
-      ? (await this.variantRepo.findOne({ where: { id: item.variantId } }))?.stock ?? 0
-      : (product?.stock ?? 0);
+    // بررسی مجدد موجودی — یک query برای هر دو حالت
+    let availableStock: number;
+    if (item.variantId) {
+      const variant = await this.variantRepo.findOne({ where: { id: item.variantId } });
+      availableStock = variant?.stock ?? 0;
+    } else {
+      const product = await this.productRepo.findOne({ where: { id: item.productId } });
+      availableStock = product?.stock ?? 0;
+    }
 
-    if (quantity > stock) {
-      throw new BadRequestException(`تنها ${stock} عدد موجود است`);
+    if (quantity > availableStock) {
+      throw new BadRequestException(`تنها ${availableStock} عدد موجود است`);
     }
 
     item.quantity = quantity;
@@ -122,8 +136,21 @@ export class CartService {
     return this.getCartSummary(userId, sessionId);
   }
 
+  // FIX [Pillar 3 — IDOR]: قبلاً cartItemRepo.delete(itemId) مستقیم فراخوانی می‌شد
+  // که هر کاربر می‌توانست آیتم هر سبد دیگری را پاک کند.
+  // اکنون: آیتم فقط در صورتی حذف می‌شود که به سبد کاربر تعلق داشته باشد.
   async removeItem(itemId: string, userId?: string, sessionId?: string) {
-    await this.cartItemRepo.delete(itemId);
+    const cart = await this.getOrCreate(userId, sessionId);
+
+    const item = cart.items?.find((i) => i.id === itemId);
+    if (!item) {
+      // آیتم یا وجود ندارد یا به سبد این کاربر تعلق ندارد
+      throw new ForbiddenException('آیتم در سبد خرید شما یافت نشد');
+    }
+
+    // حذف ایمن — فقط اگر cartId مطابقت داشته باشد
+    await this.cartItemRepo.delete({ id: itemId, cartId: cart.id });
+
     return this.getCartSummary(userId, sessionId);
   }
 
@@ -135,6 +162,8 @@ export class CartService {
     const cart = await this.getOrCreate(userId, sessionId);
     const subtotal = (cart.items ?? []).reduce((sum, item) => sum + item.priceAtTime * item.quantity, 0);
 
+    // یادداشت: validate اینجا بدون manager فراخوانی می‌شود — این اعمال مشاور است،
+    // قفل واقعی در checkout (داخل transaction) اعمال می‌شود.
     const { coupon } = await this.couponsService.validate(
       code, subtotal, cart.userId ?? userId,
     );
@@ -183,6 +212,8 @@ export class CartService {
   }
 
   // ─── Helper: محاسبه خلاصه سبد خرید ─────────────────────────────────
+  // FIX [Pillar 1 — Financial Integrity]:
+  // total هرگز نمی‌تواند منفی باشد — Math.max(0, ...) اعمال شده
   private async buildSummary(cart: Cart) {
     const items = cart.items ?? [];
     const subtotal = items.reduce((sum, item) => sum + item.priceAtTime * item.quantity, 0);
@@ -197,6 +228,7 @@ export class CartService {
         discountAmount = validated.discountAmount;
       } catch {
         // اگر کد تخفیف دیگر معتبر نیست، آن را در نظر نگیر
+        discountAmount = 0;
       }
     }
 
@@ -208,6 +240,10 @@ export class CartService {
     const freeShippingRemaining = subtotal < SHIPPING_THRESHOLD && coupon?.type !== CouponType.FREE_SHIPPING
       ? SHIPPING_THRESHOLD - subtotal
       : 0;
+
+    // FIX [Pillar 1 — Financial Integrity]: total هرگز نمی‌تواند منفی شود
+    const rawTotal = subtotal - discountAmount + shippingCost;
+    const total = Math.max(0, rawTotal);
 
     return {
       cartId: cart.id,
@@ -231,7 +267,7 @@ export class CartService {
       freeShippingRemaining,
       coupon,
       discountAmount,
-      total: subtotal - discountAmount + shippingCost,
+      total,
       itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
     };
   }

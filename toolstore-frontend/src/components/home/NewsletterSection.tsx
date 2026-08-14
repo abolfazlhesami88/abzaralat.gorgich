@@ -8,7 +8,7 @@ export function NewsletterSection() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email.trim()) {
-      toast.success('عضویت شما در خبرنامه ابزارآلات گرگیچ با موفقیت ثبت شد');
+      toast.success('عضویت شما در خبرنامه ابزارآلات گرگیج با موفقیت ثبت شد');
       setEmail('');
     }
   };
@@ -24,12 +24,12 @@ export function NewsletterSection() {
           <Mail size={26} strokeWidth={2} />
         </div>
 
-        {/* عنوان و توضیح با نام برند ابزارآلات گرگیچ */}
+        {/* عنوان و توضیح با نام برند ابزارآلات گرگیج */}
         <h2 className="font-display text-xl sm:text-2xl md:text-3xl text-[#221c12] font-extrabold mb-2.5 relative z-10 leading-tight">
           از تخفیف‌های ویژه و پیشنهادهای شگفت‌انگیز باخبر شوید
         </h2>
         <p className="text-[#8c8272] text-xs sm:text-sm md:text-base max-w-xl mx-auto mb-7 leading-relaxed font-normal relative z-10">
-          با عضویت در خبرنامه‌ی ابزارآلات گرگیچ، تازه‌ترین محصولات و کوپن‌های تخفیف اختصاصی را مستقیماً دریافت کنید
+          با عضویت در خبرنامه‌ی ابزارآلات گرگیج، تازه‌ترین محصولات و کوپن‌های تخفیف اختصاصی را مستقیماً دریافت کنید
         </p>
 
         {/* فرم عضویت در خبرنامه */}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Product } from '../../types/product.types';
 import { SpecsTable } from './SpecsTable';
 import { ReviewsSection } from './ReviewsSection';
-
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 
 export function ProductTabs({ product }: { product: Product }) {
   const [activeTab, setActiveTab] = useState('description');
@@ -12,6 +12,9 @@ export function ProductTabs({ product }: { product: Product }) {
     { id: 'specs', label: 'مشخصات فنی' },
     { id: 'reviews', label: `نظرات${product.reviewCount ? ` (${product.reviewCount})` : ''}` },
   ];
+
+  // ضدعفونی رندر HTML جهت جلوگیری از XSS
+  const sanitizedDescription = product.description ? sanitizeHtml(product.description) : null;
 
   return (
     <div style={{ marginTop: 48 }}>
@@ -55,10 +58,17 @@ export function ProductTabs({ product }: { product: Product }) {
               </div>
             )}
 
-            {/* توضیح کامل */}
-            <div style={{ fontSize: 14, lineHeight: '1.9', color: 'var(--p-gray)', whiteSpace: 'pre-wrap' }}>
-              {product.description ?? 'توضیحاتی برای این محصول ثبت نشده است.'}
-            </div>
+            {/* توضیح کامل — رندر ایمن HTML جهت جلوگیری از XSS */}
+            {sanitizedDescription ? (
+              <div
+                style={{ fontSize: 14, lineHeight: '1.9', color: 'var(--p-gray)' }}
+                dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
+              />
+            ) : (
+              <div style={{ fontSize: 14, lineHeight: '1.9', color: 'var(--p-gray)' }}>
+                توضیحاتی برای این محصول ثبت نشده است.
+              </div>
+            )}
           </div>
         )}
 

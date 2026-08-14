@@ -7,7 +7,7 @@ export function FeaturedProducts() {
   return (
     <ProductSectionRow
       title="محصولات ویژه"
-      badge="پیشنهاد طلایی گرگیچ"
+      badge="پیشنهاد طلایی گرگیج"
       theme="gold"
       products={products}
       isLoading={isLoading}

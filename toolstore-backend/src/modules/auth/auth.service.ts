@@ -19,6 +19,16 @@ import { Response } from 'express';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
+// FIX [Pillar 4 — Input Validation]: regex برای شماره موبایل ایرانی
+const IRANIAN_PHONE_REGEX = /^09[0-9]{9}$/;
+
+// حداقل فاصله بین دو درخواست OTP (ثانیه)
+const OTP_COOLDOWN_SECONDS = 60;
+// زمان انقضای OTP (ثانیه)
+const OTP_EXPIRE_SECONDS = 120;
+// حداکثر تلاش نادرست
+const OTP_MAX_ATTEMPTS = 5;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -30,12 +40,11 @@ export class AuthService {
     private readonly otpRepository: Repository<OtpCode>,
   ) {}
 
-  // ─── OTP Request (ارسال کد پیامکی) ─────────────────────────────
+  // ─── OTP Request (ارسال کد پیامکی) ─────────────────────────────────────────
 
   async requestOtp(dto: RequestOtpDto) {
-    const normalizedPhone = this.normalizePhone(dto.phone);
+    const normalizedPhone = this.normalizeAndValidatePhone(dto.phone);
 
-    // ۱. بررسی محدودیت ارسال (Rate limit: حداکثر ۱ درخواست در هر ۶۰ ثانیه)
     const existingOtp = await this.otpRepository.findOne({
       where: { phone: normalizedPhone },
       order: { createdAt: 'DESC' },
@@ -43,17 +52,17 @@ export class AuthService {
 
     if (existingOtp && existingOtp.lastSentAt) {
       const secondsSinceLastSent = (Date.now() - new Date(existingOtp.lastSentAt).getTime()) / 1000;
-      if (secondsSinceLastSent < 60) {
-        const remainingSeconds = Math.ceil(60 - secondsSinceLastSent);
-        throw new BadRequestException(`لطفاً ${remainingSeconds} ثانیه دیگر برای دریافت کد جدید شکیبا باشید`);
+      if (secondsSinceLastSent < OTP_COOLDOWN_SECONDS) {
+        const remainingSeconds = Math.ceil(OTP_COOLDOWN_SECONDS - secondsSinceLastSent);
+        throw new BadRequestException(
+          `لطفاً ${remainingSeconds} ثانیه دیگر برای دریافت کد جدید شکیبا باشید`,
+        );
       }
     }
 
-    // ۲. تولید کد تصادفی ۶ رقمی با crypto منبع امن
     const randomCode = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // ۲ دقیقه انقضا
+    const expiresAt = new Date(Date.now() + OTP_EXPIRE_SECONDS * 1000);
 
-    // ۳. ذخیره یا آپدیت رکورد OTP
     if (existingOtp) {
       existingOtp.code = randomCode;
       existingOtp.expiresAt = expiresAt;
@@ -71,7 +80,6 @@ export class AuthService {
       await this.otpRepository.save(newOtp);
     }
 
-    // ۴. ارسال کد از طریق SDK کاوهنگار
     await this.kavenegarService.sendOtp(normalizedPhone, randomCode);
 
     return {
@@ -79,13 +87,12 @@ export class AuthService {
     };
   }
 
-  // ─── OTP Verify & Login/Register (تأیید کد و ورود/ثبت‌نام) ─────
+  // ─── OTP Verify & Login/Register (تأیید کد و ورود/ثبت‌نام) ─────────────────
 
   async verifyOtp(dto: VerifyOtpDto, res: Response) {
-    const normalizedPhone = this.normalizePhone(dto.phone);
+    const normalizedPhone = this.normalizeAndValidatePhone(dto.phone);
     const inputCode = dto.code.trim();
 
-    // ۱. جستجوی رکورد OTP مربوط به شماره
     const otpRecord = await this.otpRepository.findOne({
       where: { phone: normalizedPhone },
       order: { createdAt: 'DESC' },
@@ -95,30 +102,30 @@ export class AuthService {
       throw new BadRequestException('کد تأیید معتبر یافت نشد. لطفاً مجدداً درخواست کد دهید.');
     }
 
-    // ۲. بررسی تاریخ انقضا (۲ دقیقه)
     if (new Date() > new Date(otpRecord.expiresAt)) {
       await this.otpRepository.remove(otpRecord);
       throw new BadRequestException('کد تأیید منقضی شده است. لطفاً کد جدید دریافت کنید.');
     }
 
-    // ۳. بررسی محدودیت ۵ بار تلاش اشتباه
-    if (otpRecord.attempts >= 5) {
+    if (otpRecord.attempts >= OTP_MAX_ATTEMPTS) {
       await this.otpRepository.remove(otpRecord);
       throw new BadRequestException('تعداد تلاش‌های اشتباه بیش از حد مجاز است. لطفاً کد جدید دریافت کنید.');
     }
 
-    // ۴. بررسی مطابقت کد وارد شده
-    if (otpRecord.code !== inputCode) {
+    const isCodeMatch = crypto.timingSafeEqual(
+      Buffer.from(otpRecord.code.padEnd(10, ' ')),
+      Buffer.from(inputCode.padEnd(10, ' ')),
+    );
+
+    if (!isCodeMatch) {
       otpRecord.attempts += 1;
       await this.otpRepository.save(otpRecord);
-      const remainingAttempts = 5 - otpRecord.attempts;
+      const remainingAttempts = OTP_MAX_ATTEMPTS - otpRecord.attempts;
       throw new BadRequestException(`کد وارد شده اشتباه است. (امکان ${remainingAttempts} تلاش دیگر)`);
     }
 
-    // ۵. کد صحیح است — بلافاصله رکورد OTP حذف شود (یک‌بارمصرف واقعی)
     await this.otpRepository.remove(otpRecord);
 
-    // ۶. چک تکراری بودن کاربر / ساخت کاربر جدید به صورت خودکار
     let user = await this.usersService.findByPhone(normalizedPhone);
     if (!user) {
       user = await this.usersService.createByPhone(normalizedPhone);
@@ -128,20 +135,35 @@ export class AuthService {
       throw new UnauthorizedException('حساب کاربری شما غیرفعال شده است');
     }
 
-    // ۷. صدور توکن و کوکی ورود
     return this.generateTokensAndSetCookie(user, res);
   }
 
-  // ─── فرم ثبت‌نام سنتی با ایمیل (قبلی) ──────────────────────────
+  // ─── فرم ثبت‌نام یکپارچه با ایمیل یا شماره موبایل ──────────────────────────────
 
   async register(dto: RegisterDto, res: Response) {
-    const existing = await this.usersService.findByEmail(dto.email);
-    if (existing) {
-      throw new ConflictException('این ایمیل قبلاً ثبت شده است');
+    const rawIdentifier = dto.identifier.trim();
+    const isEmailInput = this.isEmail(rawIdentifier);
+
+    let email: string | null = null;
+    let phone: string | null = null;
+
+    if (isEmailInput) {
+      email = rawIdentifier.toLowerCase();
+      const existing = await this.usersService.findByEmail(email);
+      if (existing) {
+        throw new ConflictException('این ایمیل قبلاً ثبت شده است');
+      }
+    } else {
+      phone = this.normalizeAndValidatePhone(rawIdentifier);
+      const existing = await this.usersService.findByPhone(phone);
+      if (existing) {
+        throw new ConflictException('این شماره موبایل قبلاً ثبت شده است');
+      }
     }
 
     const user = await this.usersService.create({
-      email: dto.email.toLowerCase().trim(),
+      email,
+      phone,
       passwordHash: dto.password,
       firstName: dto.firstName,
       lastName: dto.lastName,
@@ -150,12 +172,23 @@ export class AuthService {
     return this.generateTokensAndSetCookie(user, res);
   }
 
-  // ─── فرم ورود سنتی با ایمیل/رمز (قبلی) ─────────────────────────
+  // ─── فرم ورود یکپارچه با ایمیل یا شماره موبایل ───────────────────────────────
 
   async login(dto: LoginDto, res: Response) {
-    const user = await this.usersService.findByEmail(dto.email.toLowerCase());
+    const rawIdentifier = dto.identifier.trim();
+    const isEmailInput = this.isEmail(rawIdentifier);
+
+    let user: any = null;
+
+    if (isEmailInput) {
+      user = await this.usersService.findByEmail(rawIdentifier.toLowerCase());
+    } else {
+      const normalizedPhone = this.normalizeAndValidatePhone(rawIdentifier);
+      user = await this.usersService.findByPhone(normalizedPhone);
+    }
+
     if (!user) {
-      throw new UnauthorizedException('ایمیل یا رمز عبور اشتباه است');
+      throw new UnauthorizedException('ایمیل/شماره موبایل یا رمز عبور اشتباه است');
     }
 
     if (!user.isActive) {
@@ -164,7 +197,7 @@ export class AuthService {
 
     const isValid = await user.validatePassword(dto.password);
     if (!isValid) {
-      throw new UnauthorizedException('ایمیل یا رمز عبور اشتباه است');
+      throw new UnauthorizedException('ایمیل/شماره موبایل یا رمز عبور اشتباه است');
     }
 
     return this.generateTokensAndSetCookie(user, res);
@@ -220,14 +253,32 @@ export class AuthService {
     };
   }
 
-  // ─── Private Helpers ────────────────────────────────────────────
+  // ─── Private Helpers ─────────────────────────────────────────────────────────
 
-  private normalizePhone(phone: string): string {
+  private isEmail(identifier: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+  }
+
+  private normalizeAndValidatePhone(phone: string): string {
     const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    const arabicDigits  = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+
     let str = phone.trim();
     for (let i = 0; i < 10; i++) {
       str = str.replace(new RegExp(persianDigits[i], 'g'), String(i));
+      str = str.replace(new RegExp(arabicDigits[i], 'g'), String(i));
     }
+
+    if (str.startsWith('+98')) str = '0' + str.slice(3);
+    if (str.startsWith('0098')) str = '0' + str.slice(4);
+    if (str.startsWith('98') && str.length === 12) str = '0' + str.slice(2);
+
+    if (!IRANIAN_PHONE_REGEX.test(str)) {
+      throw new BadRequestException(
+        'شماره موبایل نامعتبر است. شماره باید ۱۱ رقم و با ۰۹ شروع شود (مثال: 09121234567)',
+      );
+    }
+
     return str;
   }
 
@@ -235,13 +286,13 @@ export class AuthService {
     const payload = { sub: user.id, email: user.email, phone: user.phone, role: user.role };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get('JWT_SECRET'),
-      expiresIn: '15m',
+      secret: this.configService.get('jwt.secret') || this.configService.get('JWT_SECRET') || 'toolstore_super_secret_key_2024',
+      expiresIn: (this.configService.get('jwt.accessExpires') || '15m') as any,
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get('JWT_REFRESH_SECRET'),
-      expiresIn: '7d',
+      secret: this.configService.get('jwt.refreshSecret') || this.configService.get('JWT_REFRESH_SECRET') || 'toolstore_refresh_secret_key_2024',
+      expiresIn: (this.configService.get('jwt.refreshExpires') || '7d') as any,
     });
 
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);

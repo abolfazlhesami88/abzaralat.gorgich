@@ -64,7 +64,7 @@ export function Footer() {
                 <Wrench size={20} className="text-[#241a06]" />
               </div>
               <div className="font-display font-extrabold text-lg text-white">
-                ابزارآلات <span className="bg-gradient-to-r from-[#d9b869] to-[#c79a4b] bg-clip-text text-transparent">گرگیچ</span>
+                ابزارآلات <span className="bg-gradient-to-r from-[#d9b869] to-[#c79a4b] bg-clip-text text-transparent">گرگیج</span>
               </div>
             </div>
 
@@ -82,7 +82,9 @@ export function Footer() {
                 <Send size={16} />
               </a>
               <a
-                href="#"
+                href="https://instagram.com/tools.gorgij"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-9 h-9 rounded-xl bg-[rgba(217,184,105,0.08)] border border-[rgba(217,184,105,0.22)] flex items-center justify-center text-[#d9b869] hover:bg-[rgba(217,184,105,0.2)] hover:-translate-y-1 transition-all duration-200"
                 aria-label="اینستاگرام"
               >
@@ -103,15 +105,15 @@ export function Footer() {
             <div className="space-y-3 text-xs text-[#a89f8c] leading-relaxed">
               <div className="flex items-start gap-2.5">
                 <MapPin size={16} className="text-[#d9b869] shrink-0 mt-0.5" />
-                <span>تهران، خیابان امام خمینی، میدان حسن‌آباد، پاساژ ابزار، پلاک 12</span>
+                <span>چابهار ، منطقه آزاد ، مجتمع فردوس ، غرفه 172 و 173</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Phone size={16} className="text-[#d9b869] shrink-0" />
-                <span>021 - 66701234</span>
+                <span>09961197861</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Mail size={16} className="text-[#d9b869] shrink-0" />
-                <span>info@gorgichtools.ir</span>
+                <span>info@gorgijtools.ir</span>
               </div>
             </div>
           </div>
@@ -177,7 +179,7 @@ export function Footer() {
 
         {/* نوار پایانی کپی‌رایت */}
         <div className="border-t border-[rgba(217,184,105,0.14)] pt-5 text-center text-[11.5px] text-[#7a7060]">
-          تمامی حقوق برای فروشگاه <b className="text-[#a89f8c] font-bold">ابزارآلات گرگیچ</b> محفوظ است. © 2026
+          تمامی حقوق برای فروشگاه <b className="text-[#a89f8c] font-bold">ابزارآلات گرگیج</b> محفوظ است. © 2026
         </div>
       </div>
     </footer>

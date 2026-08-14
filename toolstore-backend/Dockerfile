@@ -1,23 +1,28 @@
-# Base image
-FROM node:20-alpine
-
-# Create app directory
+# Stage 1: Build the NestJS application
+FROM node:20-alpine AS build
 WORKDIR /usr/src/app
 
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
 COPY package*.json ./
-
-# Install app dependencies
-RUN npm install
-
-# Bundle app source
+RUN npm ci
 COPY . .
-
-# Build the app
 RUN npm run build
 
-# Expose port
-EXPOSE 3000
+# Stage 2: Production image
+FROM node:20-alpine
+WORKDIR /usr/src/app
 
-# Start the server using the production build
-CMD ["npm", "run", "start:prod"]
+# Install only production dependencies
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy built application from build stage
+COPY --from=build /usr/src/app/dist ./dist
+
+# Create uploads directory and set permissions for node user
+RUN mkdir -p uploads && chown -R node:node /usr/src/app/uploads
+
+# Use non-root user for security
+USER node
+
+EXPOSE 3000
+CMD ["node", "dist/main"]

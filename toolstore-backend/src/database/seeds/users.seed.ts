@@ -6,24 +6,41 @@ import * as bcrypt from 'bcrypt';
 export async function seedUsers(dataSource: DataSource) {
   const repo = dataSource.getRepository(User);
 
-  const existing = await repo.count();
-  if (existing > 0) {
-    console.log('  ⏭️  کاربران قبلاً seed شدهاند، رد میشود');
-    return;
-  }
+  // بررسی یا ایجاد حساب ادمین اصلی
+  const existingAdmin = await repo.findOne({ where: { email: 'admin@admin.com' } });
 
-  const users = [
-    {
+  if (existingAdmin) {
+    // UPDATE: هوک @BeforeInsert اجرا نمی‌شود، پس باید خودمان هش کنیم
+    existingAdmin.passwordHash = await bcrypt.hash('admin', 12);
+    existingAdmin.role = UserRole.ADMIN;
+    existingAdmin.isActive = true;
+    await repo.save(existingAdmin);
+    console.log('  ✅ کاربر مدیر (admin@admin.com) با رمز admin به‌روزرسانی شد');
+  } else {
+    // INSERT: هوک @BeforeInsert خودش هش می‌کند، پس رمز را به صورت متن ساده می‌دهیم
+    const adminUser = repo.create({
       email: 'admin@admin.com',
-      passwordHash: await bcrypt.hash('admin', 12),
+      passwordHash: 'admin',
       firstName: 'مدیر',
       lastName: 'سیستم',
       role: UserRole.ADMIN,
       isActive: true,
-    },
+    });
+    await repo.save(adminUser);
+    console.log('  ✅ کاربر مدیر (admin@admin.com) ایجاد شد');
+  }
+
+  const existingCount = await repo.count();
+  if (existingCount > 1) {
+    console.log('  ⏭️  سایر کاربران قبلاً وجود داشتند، رد شد');
+    return;
+  }
+
+  const defaultPasswordHash = await bcrypt.hash('User@1234', 12);
+  const sampleUsers = [
     {
       email: 'ali@example.com',
-      passwordHash: await bcrypt.hash('User@1234', 12),
+      passwordHash: defaultPasswordHash,
       firstName: 'علی',
       lastName: 'احمدی',
       phone: '09121234567',
@@ -32,7 +49,7 @@ export async function seedUsers(dataSource: DataSource) {
     },
     {
       email: 'sara@example.com',
-      passwordHash: await bcrypt.hash('User@1234', 12),
+      passwordHash: defaultPasswordHash,
       firstName: 'سارا',
       lastName: 'محمدی',
       phone: '09351234567',
@@ -41,7 +58,7 @@ export async function seedUsers(dataSource: DataSource) {
     },
     {
       email: 'reza@example.com',
-      passwordHash: await bcrypt.hash('User@1234', 12),
+      passwordHash: defaultPasswordHash,
       firstName: 'رضا',
       lastName: 'کریمی',
       phone: '09011234567',
@@ -50,12 +67,10 @@ export async function seedUsers(dataSource: DataSource) {
     },
   ];
 
-  await repo.query(`
-    INSERT INTO users (id, email, password_hash, first_name, last_name, phone, role, is_active, created_at, updated_at)
-    VALUES
-      (gen_random_uuid(), 'admin@admin.com', '${users[0].passwordHash}', 'مدیر', 'سیستم', NULL, 'admin', true, NOW(), NOW()),
-      (gen_random_uuid(), 'ali@example.com', '${users[1].passwordHash}', 'علی', 'احمدی', '09121234567', 'customer', true, NOW(), NOW()),
-      (gen_random_uuid(), 'sara@example.com', '${users[2].passwordHash}', 'سارا', 'محمدی', '09351234567', 'customer', true, NOW(), NOW()),
-      (gen_random_uuid(), 'reza@example.com', '${users[3].passwordHash}', 'رضا', 'کریمی', '09011234567', 'customer', true, NOW(), NOW())
-  `);
+  for (const u of sampleUsers) {
+    const exists = await repo.findOne({ where: { email: u.email } });
+    if (!exists) {
+      await repo.save(repo.create(u));
+    }
+  }
 }

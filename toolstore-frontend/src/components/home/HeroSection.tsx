@@ -137,7 +137,7 @@ export function HeroSection() {
             <div className="relative group">
               <img
                 src={getMediaUrl(heroImageUrl)}
-                alt="ابزارآلات صنعتی گرگیچ"
+                alt="ابزارآلات صنعتی گرگیج"
                 className="max-w-[280px] sm:max-w-[340px] lg:max-w-[380px] w-full object-contain rounded-2xl filter drop-shadow-[0_25px_35px_rgba(90,70,20,0.25)] -rotate-3 transition-all duration-500 group-hover:rotate-[-1deg] group-hover:scale-[1.02]"
               />
 

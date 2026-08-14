@@ -67,10 +67,10 @@ export function AuthBrandPanel() {
 
           <div className="flex flex-col">
             <span className="font-display text-xl sm:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-[#ffffff] via-[#e8cd8f] to-[#d9b869] bg-clip-text text-transparent">
-              ابزارآلات گرگیچ
+              ابزارآلات گرگیج
             </span>
             <span className="text-[9px] font-extrabold text-[#d9b869] tracking-[0.25em] uppercase -mt-0.5 opacity-90">
-              GORGICH TOOLS
+              GORGIJ TOOLS
             </span>
           </div>
         </Link>
@@ -94,7 +94,7 @@ export function AuthBrandPanel() {
         </h2>
 
         <p className="text-[#b8ac95] text-sm sm:text-base leading-relaxed max-w-md font-normal">
-          بیش از ۱۰ هزار تکنسین و متخصص در سراسر کشور، ابزارآلات صنعتی و خانگی خود را از مجموعه گرگیچ تأمین می‌کنند.
+          بیش از ۱۰ هزار تکنسین و متخصص در سراسر کشور، ابزارآلات صنعتی و خانگی خود را از مجموعه گرگیج تأمین می‌کنند.
         </p>
       </div>
 

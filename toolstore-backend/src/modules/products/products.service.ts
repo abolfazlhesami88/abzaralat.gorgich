@@ -7,6 +7,10 @@ import { Product } from './entities/product.entity';
 import { QueryProductsDto, ProductSortBy } from './dto/query-products.dto';
 import { paginate } from '../../common/dto/pagination.dto';
 
+// FIX [Pillar 5 — Performance]: سقف‌های سخت برای جلوگیری از queries بی‌حد
+const MAX_FEATURED_LIMIT = 20;
+const MAX_RELATED_LIMIT  = 8;
+
 @Injectable()
 export class ProductsService {
   constructor(
@@ -14,12 +18,13 @@ export class ProductsService {
     private readonly productRepo: Repository<Product>,
   ) {}
 
-  // ─── لیست محصولات با فیلتر کامل ──────────────────────────────────
+  // ─── لیست محصولات با فیلتر کامل ────────────────────────────────────────────
   async findAll(query: QueryProductsDto, includeInactive = false) {
     const qb = this.buildBaseQuery(includeInactive);
 
     if (query.categorySlug) {
-      qb.andWhere('category.slug = :categorySlug', { categorySlug: query.categorySlug });
+      qb.leftJoin('category.parent', 'parentCategory');
+      qb.andWhere('(category.slug = :categorySlug OR parentCategory.slug = :categorySlug)', { categorySlug: query.categorySlug });
     }
 
     if (query.brandSlug) {
@@ -43,7 +48,6 @@ export class ProductsService {
     }
 
     if (query.search) {
-      // استفاده از full-text search vector که در مرحله ۲ ساختیم
       qb.andWhere(
         `product.search_vector @@ plainto_tsquery('simple', :search)`,
         { search: query.search },
@@ -67,7 +71,7 @@ export class ProductsService {
     return paginate(items, total, page, limit);
   }
 
-  // ─── جزئیات یک محصول با slug ──────────────────────────────────────
+  // ─── جزئیات یک محصول با slug ───────────────────────────────────────────────
   async findBySlug(slug: string) {
     const product = await this.productRepo.findOne({
       where: { slug, status: 'active' as any },
@@ -84,38 +88,44 @@ export class ProductsService {
     return product;
   }
 
-  // ─── محصولات ویژه (Featured) ──────────────────────────────────────
+  // FIX [Pillar 5 — Performance]:
+  // در تمام find* endpoint ها:
+  // ۱. limit به سقف MAX_FEATURED_LIMIT محدود شد — کلاینت نمی‌تواند limit=10000 بدهد
+  // ۲. order اضافه شد به findRelated برای نتایج consistent
+
   async findFeatured(limit = 8) {
+    const safeLimit = Math.min(Number(limit) || 8, MAX_FEATURED_LIMIT);
     return this.productRepo.find({
       where: { status: 'active' as any, isFeatured: true },
       relations: { category: true, brand: true, images: true },
       order: { createdAt: 'DESC' },
-      take: limit,
+      take: safeLimit,
     });
   }
 
-  // ─── جدیدترین محصولات ──────────────────────────────────────────────
   async findNewArrivals(limit = 8) {
+    const safeLimit = Math.min(Number(limit) || 8, MAX_FEATURED_LIMIT);
     return this.productRepo.find({
       where: { status: 'active' as any, isNew: true },
       relations: { category: true, brand: true, images: true },
       order: { createdAt: 'DESC' },
-      take: limit,
+      take: safeLimit,
     });
   }
 
-  // ─── پرفروشترینها ─────────────────────────────────────────────────
   async findBestSellers(limit = 8) {
+    const safeLimit = Math.min(Number(limit) || 8, MAX_FEATURED_LIMIT);
     return this.productRepo.find({
       where: { status: 'active' as any },
       relations: { category: true, brand: true, images: true },
       order: { soldCount: 'DESC' },
-      take: limit,
+      take: safeLimit,
     });
   }
 
-  // ─── محصولات مرتبط (همان دستهبندی) ────────────────────────────────
   async findRelated(slug: string, limit = 4) {
+    const safeLimit = Math.min(Number(limit) || 4, MAX_RELATED_LIMIT);
+
     const product = await this.productRepo.findOne({ where: { slug } });
     if (!product || !product.categoryId) return [];
 
@@ -125,11 +135,13 @@ export class ProductsService {
         status: 'active' as any,
       },
       relations: { category: true, brand: true, images: true },
-      take: limit + 1, // یکی بیشتر برای حذف خود محصول
-    }).then((products) => products.filter((p) => p.id !== product.id).slice(0, limit));
+      // FIX: اضافه کردن order برای نتایج consistent
+      order: { soldCount: 'DESC' },
+      take: safeLimit + 1,
+    }).then((products) => products.filter((p) => p.id !== product.id).slice(0, safeLimit));
   }
 
-  // ─── Helpers خصوصی ────────────────────────────────────────────────
+  // ─── Helpers خصوصی ──────────────────────────────────────────────────────────
 
   private buildBaseQuery(includeInactive: boolean): SelectQueryBuilder<Product> {
     const qb = this.productRepo
@@ -150,7 +162,6 @@ export class ProductsService {
     sortBy: ProductSortBy | undefined,
     hasSearch: boolean,
   ) {
-    // اگر جستجو فعال است، اولویت با رتبه جستجو است مگر کاربر صریحاً سورت دیگری بخواهد
     if (hasSearch && !sortBy) {
       qb.orderBy('search_rank', 'DESC');
       return;

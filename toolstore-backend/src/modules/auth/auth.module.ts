@@ -20,8 +20,8 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get('JWT_SECRET'),
-        signOptions: { expiresIn: '15m' },
+        secret: config.get('jwt.secret') || config.get('JWT_SECRET') || 'toolstore_super_secret_key_2024',
+        signOptions: { expiresIn: config.get('jwt.accessExpires') || '15m' },
       }),
     }),
   ],

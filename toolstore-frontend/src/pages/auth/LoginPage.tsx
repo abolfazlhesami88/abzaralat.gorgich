@@ -15,8 +15,8 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ایمیل/پسورد سنتی
-  const [email, setEmail] = useState('');
+  // ورود یکپارچه شناسه (ایمیل یا شماره موبایل) و پسورد
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
 
   const navigate = useNavigate();
@@ -126,21 +126,33 @@ export function LoginPage() {
     }
   };
 
-  // ورود سنتی ایمیل/رمز
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  // ورود یکپارچه با ایمیل/شماره موبایل و رمز عبور
+  const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const cleanIdentifier = identifier.trim();
+    if (!cleanIdentifier) {
+      setError('لطفاً ایمیل یا شماره موبایل خود را وارد کنید');
+      return;
+    }
+    if (!password) {
+      setError('لطفاً رمز عبور خود را وارد کنید');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await authApi.login({ email, password });
+      const res = await authApi.login({ identifier: cleanIdentifier, password });
       setAuth(res.user, res.accessToken);
       await mergeGuestCart();
 
+      toast.success('خوش آمدید!');
       const defaultPath = res.user.role === 'admin' ? '/admin' : '/account';
       const from = (location.state as any)?.from ?? defaultPath;
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'ایمیل یا رمز عبور اشتباه است');
+      setError(err?.response?.data?.message ?? 'ایمیل/شماره موبایل یا رمز عبور اشتباه است');
     } finally {
       setLoading(false);
     }
@@ -151,7 +163,7 @@ export function LoginPage() {
       {/* نیمه راست — پنل برند هویتی */}
       <AuthBrandPanel />
 
-      {/* نیمه چپ — فرم دو مرحله‌ای OTP */}
+      {/* نیمه چپ — فرم‌های ورود */}
       <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-10 lg:p-12 relative">
         <Link
           to="/"
@@ -162,7 +174,7 @@ export function LoginPage() {
         </Link>
 
         <div className="w-full max-w-md my-auto py-6">
-          {/* مرحله ۱: ورود شماره موبایل */}
+          {/* مرحله ۱: ورود سریع با پیامک */}
           {step === 'phone' && (
             <div>
               <div className="text-center mb-8">
@@ -209,8 +221,14 @@ export function LoginPage() {
                   onClick={() => { setStep('email'); setError(''); }}
                   className="text-xs font-bold text-[#a67d34] hover:underline"
                 >
-                  ورود با ایمیل و رمز عبور
+                  ورود با ایمیل/شماره موبایل و رمز عبور
                 </button>
+              </div>
+              
+              <div className="mt-4 text-center">
+                <Link to="/register" className="text-xs font-bold text-[#a67d34] hover:underline">
+                  ثبت نام با ایمیل یا شماره موبایل
+                </Link>
               </div>
             </div>
           )}
@@ -288,32 +306,36 @@ export function LoginPage() {
             </div>
           )}
 
-          {/* ورود سنتی ایمیل/رمز */}
+          {/* ورود یکپارچه با شناسه (ایمیل یا شماره موبایل) و رمز عبور */}
           {step === 'email' && (
             <div>
               <div className="text-center mb-8">
                 <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#221c12]">
-                  ورود با ایمیل
+                  ورود با رمز عبور
                 </h1>
                 <p className="text-sm text-[#8c8272] mt-2 font-normal">
-                  پست الکترونیک و رمز عبور خود را وارد نمایید
+                  ایمیل یا شماره موبایل به همراه رمز عبور خود را وارد نمایید
                 </p>
               </div>
 
-              <form onSubmit={handleEmailLogin} className="space-y-4">
+              <form onSubmit={handlePasswordLogin} className="space-y-4">
                 <div>
-                  <label className="text-xs sm:text-sm font-bold text-[#221c12] block mb-1.5">ایمیل</label>
+                  <label className="text-xs sm:text-sm font-bold text-[#221c12] block mb-1.5">
+                    ایمیل یا شماره موبایل
+                  </label>
                   <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="user@example.com یا 09123456789"
                     dir="ltr"
                     className="w-full h-12 px-4 rounded-[13px] border border-[#ece4d3] bg-[#faf7f2] text-[#221c12] text-sm shadow-[inset_0_2px_4px_rgba(34,28,18,0.04)] focus:outline-none focus:border-[#c79a4b]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs sm:text-sm font-bold text-[#221c12] block mb-1.5">رمز عبور</label>
+                  <label className="text-xs sm:text-sm font-bold text-[#221c12] block mb-1.5">
+                    رمز عبور
+                  </label>
                   <input
                     type="password"
                     value={password}
@@ -330,7 +352,7 @@ export function LoginPage() {
                   className="w-full h-12 bg-gradient-to-r from-[#c79a4b] via-[#d9b869] to-[#c79a4b] text-[#221c12] font-extrabold text-sm rounded-[13px] shadow-md flex items-center justify-center gap-2"
                 >
                   <Lock size={18} />
-                  <span>ورود با ایمیل</span>
+                  <span>{loading ? 'در حال ورود...' : 'ورود به حساب'}</span>
                 </button>
               </form>
 
@@ -339,7 +361,7 @@ export function LoginPage() {
                   onClick={() => { setStep('phone'); setError(''); }}
                   className="text-xs font-bold text-[#a67d34] hover:underline"
                 >
-                  بازگشت به ورود سریع با شماره موبایل
+                  بازگشت به ورود سریع با پیامک
                 </button>
               </div>
             </div>

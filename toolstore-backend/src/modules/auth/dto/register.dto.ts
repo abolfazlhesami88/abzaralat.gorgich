@@ -1,18 +1,20 @@
-import { IsEmail, IsString, MinLength, MaxLength, Matches, IsOptional } from 'class-validator';
+import { IsString, MinLength, MaxLength, Matches, IsOptional, IsNotEmpty, Validate } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsEmailOrPhoneConstraint } from './login.dto';
 
 export class RegisterDto {
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail({}, { message: 'فرمت ایمیل صحیح نیست' })
-  email: string;
-
-  @ApiProperty({ example: 'Password@123' })
+  @ApiProperty({ example: 'user@example.com یا 09123456789' })
+  @IsNotEmpty({ message: 'ایمیل یا شماره موبایل الزامی است' })
   @IsString()
-  @MinLength(8, { message: 'رمز عبور باید حداقل ۸ کاراکتر باشد' })
+  @Validate(IsEmailOrPhoneConstraint)
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
+  identifier: string;
+
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @MinLength(6, { message: 'رمز عبور باید حداقل ۶ کاراکتر باشد' })
   @MaxLength(50, { message: 'رمز عبور نباید بیشتر از ۵۰ کاراکتر باشد' })
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message: 'رمز عبور باید شامل حروف بزرگ، کوچک و عدد باشد',
-  })
   password: string;
 
   @ApiProperty({ example: 'علی', required: false })
