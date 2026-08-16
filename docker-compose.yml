@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   postgres:
     image: postgres:15-alpine
@@ -10,15 +9,16 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-rootpassword}
       POSTGRES_DB: ${DB_NAME:-toolstore}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
+      test:
+      - CMD-SHELL
+      - pg_isready
       interval: 3s
       timeout: 3s
       retries: 5
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+    - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
-
+    - 5432:5432
   backend:
     build:
       context: ./toolstore-backend
@@ -26,29 +26,28 @@ services:
     container_name: toolstore_backend
     restart: always
     environment:
-      - NODE_ENV=production
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USERNAME=${DB_USERNAME:-root}
-      - DB_PASSWORD=${DB_PASSWORD:-rootpassword}
-      - DB_NAME=${DB_NAME:-toolstore}
-      - DB_SYNCHRONIZE=false
-      - DB_SSL=false
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
-      - JWT_ACCESS_EXPIRES=15m
-      - JWT_REFRESH_EXPIRES=7d
-      - KAVENEGAR_API_KEY=${KAVENEGAR_API_KEY}
-      - FRONTEND_URL=https://abzargorgij.com
-      - PORT=3000
+    - NODE_ENV=production
+    - DB_HOST=postgres
+    - DB_PORT=5432
+    - DB_USERNAME=${DB_USERNAME:-root}
+    - DB_PASSWORD=${DB_PASSWORD:-rootpassword}
+    - DB_NAME=${DB_NAME:-toolstore}
+    - DB_SYNCHRONIZE=false
+    - DB_SSL=false
+    - JWT_SECRET=${JWT_SECRET}
+    - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+    - JWT_ACCESS_EXPIRES=15m
+    - JWT_REFRESH_EXPIRES=7d
+    - KAVENEGAR_API_KEY=${KAVENEGAR_API_KEY}
+    - FRONTEND_URL=https://abzargorgij.com
+    - PORT=3000
     ports:
-      - "3000:3000"
+    - 3000:3000
     volumes:
-      - ./uploads:/usr/src/app/uploads
+    - ./uploads:/usr/src/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
-
   frontend:
     build:
       context: ./toolstore-frontend
@@ -58,11 +57,13 @@ services:
     container_name: toolstore_frontend
     restart: always
     ports:
-      - "80:80"
+    - 80:80
+    - 443:443
     volumes:
-      - ./uploads:/usr/share/nginx/html/uploads
+    - ./uploads:/usr/share/nginx/html/uploads
+    - /etc/letsencrypt:/etc/letsencrypt:ro
+    - /root/toolstore/nginx-custom.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - backend
-
+    - backend
 volumes:
-  postgres_data:
+  postgres_data: null
