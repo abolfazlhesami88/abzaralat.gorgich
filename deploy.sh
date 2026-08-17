@@ -23,7 +23,7 @@ if $DC up -d --build; then
   CODE=""
   for i in {1..6}; do
     sleep 3
-    CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/adminsite || echo "000")
+    CODE=$(curl -s -o /dev/null -w "%{http_code}" --noproxy "*" http://localhost/adminsite || echo "000")
     if [ "$CODE" == "200" ] || [ "$CODE" == "301" ] || [ "$CODE" == "302" ]; then
       break
     fi
