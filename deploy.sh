@@ -19,9 +19,18 @@ git reset --hard origin/$BRANCH
 
 echo "=== بیلد و اجرا ==="
 if $DC up -d --build; then
-  sleep 5
-  CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/adminsite)
-  if [ "$CODE" == "200" ]; then
+  echo "⏳ در حال بررسی سلامت سرویس‌ها..."
+  CODE=""
+  for i in {1..6}; do
+    sleep 3
+    CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/adminsite || echo "000")
+    if [ "$CODE" == "200" ] || [ "$CODE" == "301" ] || [ "$CODE" == "302" ]; then
+      break
+    fi
+    echo "در حال انتظار برای بالا آمدن کامل سرویس (کد فعلی: $CODE، تلاش $i از 6)..."
+  done
+
+  if [ "$CODE" == "200" ] || [ "$CODE" == "301" ] || [ "$CODE" == "302" ]; then
     echo "✅ دیپلوی موفق بود. پنل ادمین سالمه (HTTP $CODE)."
   else
     echo "⚠️ پنل ادمین جواب نداد (HTTP $CODE) — بازگشت به بک‌آپ..."
