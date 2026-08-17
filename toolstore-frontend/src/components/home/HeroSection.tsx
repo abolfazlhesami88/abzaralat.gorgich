@@ -4,9 +4,23 @@ import { ArrowLeft, ShieldCheck, Wrench, Hammer, Compass, Settings, Zap, Shield 
 import { siteSettingsApi } from '../../api/site-settings.api';
 import { getMediaUrl } from '../../utils/media';
 
+const CACHED_HERO_KEY = 'gorgij_cached_hero_img';
+
 export function HeroSection() {
-  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(CACHED_HERO_KEY) || null;
+    } catch {
+      return null;
+    }
+  });
+  const [isLoaded, setIsLoaded] = useState<boolean>(() => {
+    try {
+      return Boolean(localStorage.getItem(CACHED_HERO_KEY));
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     siteSettingsApi
@@ -14,13 +28,12 @@ export function HeroSection() {
       .then((settings) => {
         if (settings.hero_image_url) {
           setHeroImageUrl(settings.hero_image_url);
-        } else {
-          setHeroImageUrl('/hero_tools.jpg');
+          try {
+            localStorage.setItem(CACHED_HERO_KEY, settings.hero_image_url);
+          } catch {}
         }
       })
-      .catch(() => {
-        setHeroImageUrl('/hero_tools.jpg');
-      })
+      .catch(() => {})
       .finally(() => {
         setIsLoaded(true);
       });
@@ -108,14 +121,15 @@ export function HeroSection() {
             {/* نمایش تصویر ابزار در سایز موبایل (بین متن و دکمه‌ها) */}
             <div className="block sm:hidden my-4 relative mx-auto w-full max-w-[240px] text-center">
               <div className="relative inline-block">
-                <img
-                  src={heroImageUrl ? (getMediaUrl(heroImageUrl) || heroImageUrl) : '/hero_tools.jpg'}
-                  alt="ابزارآلات صنعتی گرگیچ"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/hero_tools.jpg';
-                  }}
-                  className={`w-full max-h-[220px] object-contain drop-shadow-[0_15px_25px_rgba(90,70,20,0.2)] -rotate-2 transition-all duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                />
+                {heroImageUrl ? (
+                  <img
+                    src={getMediaUrl(heroImageUrl) || heroImageUrl}
+                    alt="ابزارآلات صنعتی گرگیچ"
+                    className={`w-full max-h-[220px] object-contain drop-shadow-[0_15px_25px_rgba(90,70,20,0.2)] -rotate-2 transition-all duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  />
+                ) : (
+                  <div className="w-[200px] h-[180px] mx-auto rounded-2xl bg-[#fbf1d9]/40 animate-pulse" />
+                )}
                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-[85%] h-4 bg-[radial-gradient(ellipse,rgba(90,70,20,0.2),transparent_70%)] blur-[4px] pointer-events-none" />
               </div>
             </div>
@@ -157,14 +171,15 @@ export function HeroSection() {
           {/* نمایش تصویر ابزار در سایز تبلت و دسکتاپ (ستون سمت چپ) */}
           <div className="hidden sm:flex flex-[0.9] relative items-center justify-center sm:min-h-[300px] w-full lg:w-auto">
             <div className="relative group">
-              <img
-                src={heroImageUrl ? (getMediaUrl(heroImageUrl) || heroImageUrl) : '/hero_tools.jpg'}
-                alt="ابزارآلات صنعتی گرگیچ"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/hero_tools.jpg';
-                }}
-                className={`max-w-[280px] md:max-w-[340px] lg:max-w-[380px] w-full object-contain filter drop-shadow-[0_25px_35px_rgba(90,70,20,0.25)] -rotate-3 transition-all duration-500 group-hover:rotate-[-1deg] group-hover:scale-[1.02] ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-              />
+              {heroImageUrl ? (
+                <img
+                  src={getMediaUrl(heroImageUrl) || heroImageUrl}
+                  alt="ابزارآلات صنعتی گرگیچ"
+                  className={`max-w-[280px] md:max-w-[340px] lg:max-w-[380px] w-full object-contain filter drop-shadow-[0_25px_35px_rgba(90,70,20,0.25)] -rotate-3 transition-all duration-500 group-hover:rotate-[-1deg] group-hover:scale-[1.02] ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+                />
+              ) : (
+                <div className="w-[280px] sm:w-[340px] lg:w-[380px] h-[260px] rounded-2xl bg-[#fbf1d9]/40 animate-pulse" />
+              )}
               <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[80%] h-6 bg-[radial-gradient(ellipse,rgba(90,70,20,0.22),transparent_70%)] blur-[5px] pointer-events-none" />
             </div>
           </div>
