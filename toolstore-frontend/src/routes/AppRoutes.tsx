@@ -11,6 +11,11 @@ import { OrderSuccessPage } from '../pages/public/OrderSuccessPage';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
 import { AdminLoginPage } from '../pages/auth/AdminLoginPage';
+import { ContactUsPage } from '../pages/public/ContactUsPage';
+import { AboutUsPage } from '../pages/public/AboutUsPage';
+import { FaqPage } from '../pages/public/FaqPage';
+import { ShippingPage } from '../pages/public/ShippingPage';
+import { TermsPage } from '../pages/public/TermsPage';
 import { PrivateRoute } from './PrivateRoute';
 import { AccountLayout } from '../layouts/AccountLayout';
 import { AccountDashboard } from '../pages/account/AccountDashboard';
@@ -34,6 +39,11 @@ export function AppRoutes() {
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/orders/:orderNumber/success" element={<OrderSuccessPage />} />
+        <Route path="/contact" element={<ContactUsPage />} />
+        <Route path="/about" element={<AboutUsPage />} />
+        <Route path="/faq" element={<FaqPage />} />
+        <Route path="/shipping" element={<ShippingPage />} />
+        <Route path="/terms" element={<TermsPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Route>

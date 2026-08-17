@@ -233,32 +233,57 @@ export class AdminProductsService {
         return { updated: 0 };
       }
 
+      const numValue = Number(value) || 0;
+
       for (const product of products) {
         switch (actionType) {
           case BulkActionType.PRICE_PERCENT_INC: {
-            const inc = product.price * (value / 100);
+            const inc = product.price * (numValue / 100);
             product.price = Math.round((Number(product.price) + inc) / 1000) * 1000;
             break;
           }
           case BulkActionType.PRICE_PERCENT_DEC: {
-            const dec = product.price * (value / 100);
+            const dec = product.price * (numValue / 100);
             product.price = Math.round((Number(product.price) - dec) / 1000) * 1000;
             break;
           }
           case BulkActionType.PRICE_FIXED_INC: {
-            product.price = Number(product.price) + value;
+            product.price = Number(product.price) + numValue;
             break;
           }
           case BulkActionType.PRICE_FIXED_DEC: {
-            product.price = Number(product.price) - value;
+            product.price = Number(product.price) - numValue;
             break;
           }
           case BulkActionType.STOCK_ADD: {
-            product.stock = Number(product.stock) + value;
+            product.stock = Number(product.stock) + numValue;
             break;
           }
           case BulkActionType.STOCK_SET: {
-            product.stock = value;
+            product.stock = numValue;
+            break;
+          }
+          case BulkActionType.SET_DISCOUNT_PERCENT: {
+            const discountPercent = Math.min(Math.max(numValue, 0), 99);
+            if (discountPercent > 0) {
+              const originalPrice = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price)
+                ? Number(product.compareAtPrice)
+                : Number(product.price);
+              product.compareAtPrice = originalPrice;
+              product.price = Math.round((originalPrice * (1 - discountPercent / 100)) / 1000) * 1000;
+            } else {
+              if (product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price)) {
+                product.price = Number(product.compareAtPrice);
+              }
+              product.compareAtPrice = null;
+            }
+            break;
+          }
+          case BulkActionType.REMOVE_DISCOUNT: {
+            if (product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price)) {
+              product.price = Number(product.compareAtPrice);
+            }
+            product.compareAtPrice = null;
             break;
           }
         }
@@ -268,8 +293,10 @@ export class AdminProductsService {
         if (product.stock < 0) product.stock = 0;
 
         // Reset compareAtPrice if current price exceeds it
-        if (product.compareAtPrice && product.price > product.compareAtPrice) {
-          product.compareAtPrice = null;
+        if (actionType !== BulkActionType.SET_DISCOUNT_PERCENT && actionType !== BulkActionType.REMOVE_DISCOUNT) {
+          if (product.compareAtPrice && Number(product.price) >= Number(product.compareAtPrice)) {
+            product.compareAtPrice = null;
+          }
         }
       }
 

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, ArrowRight, Upload, X } from 'lucide-react';
+import { Save, ArrowRight, Upload, X, Tag, Percent, RotateCcw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { apiClient } from '../../api/client';
 import { ENDPOINTS } from '../../api/endpoints';
 import { getMediaUrl } from '../../utils/media';
+import { formatPrice } from '../../utils/formatPrice';
 
 export function AdminProductFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,7 @@ export function AdminProductFormPage() {
     name: '',
     sku: '',
     price: '',
+    compareAtPrice: '',
     stock: '',
     lowStockThreshold: '',
     categoryId: '',
@@ -30,6 +32,7 @@ export function AdminProductFormPage() {
     status: 'active',
   });
 
+  const [discountPercent, setDiscountPercent] = useState<string>('');
   const [images, setImages] = useState<any[]>([]);
 
   useEffect(() => {
@@ -54,18 +57,32 @@ export function AdminProductFormPage() {
         try {
           const { data } = await apiClient.get(ENDPOINTS.ADMIN.PRODUCTS.DETAIL(id!));
           const p = data.data;
+          const originalPrice = p.compareAtPrice ? String(p.compareAtPrice) : '';
+          const currentPrice = p.price ? String(p.price) : '';
+          
           setFormData({
             name: p.name || '',
             sku: p.sku || '',
-            price: p.price || '',
-            stock: p.stock || '',
-            lowStockThreshold: p.lowStockThreshold || '',
+            price: currentPrice,
+            compareAtPrice: originalPrice,
+            stock: p.stock !== undefined ? String(p.stock) : '',
+            lowStockThreshold: p.lowStockThreshold !== undefined ? String(p.lowStockThreshold) : '',
             categoryId: p.categoryId || '',
             brandId: p.brandId || '',
             shortDescription: p.shortDescription || '',
             description: p.description || '',
             status: p.status || 'draft',
           });
+
+          if (p.compareAtPrice && p.price && Number(p.compareAtPrice) > Number(p.price)) {
+            const calculatedPercent = Math.round(
+              ((Number(p.compareAtPrice) - Number(p.price)) / Number(p.compareAtPrice)) * 100
+            );
+            setDiscountPercent(String(calculatedPercent));
+          } else {
+            setDiscountPercent('');
+          }
+
           setImages(p.images || []);
         } catch (e) {
           console.error('Error fetching product details', e);
@@ -87,12 +104,52 @@ export function AdminProductFormPage() {
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
+  // اعمال تخفیف بر اساس درصد وارد شده
+  const handleApplyDiscountPercent = (percentVal: number | string) => {
+    const percent = Number(percentVal);
+    setDiscountPercent(percentVal ? String(percentVal) : '');
+
+    if (!percentVal || isNaN(percent) || percent <= 0) {
+      handleRemoveDiscount();
+      return;
+    }
+
+    const currentCompare = Number(formData.compareAtPrice);
+    const currentPrice = Number(formData.price);
+    const basePrice = currentCompare > currentPrice ? currentCompare : (currentCompare || currentPrice || 0);
+
+    if (basePrice > 0) {
+      const newPrice = Math.round((basePrice * (1 - Math.min(percent, 99) / 100)) / 1000) * 1000;
+      setFormData(prev => ({
+        ...prev,
+        compareAtPrice: String(basePrice),
+        price: String(newPrice),
+      }));
+    }
+  };
+
+  // حذف کامل تخفیف و بازگشت به قیمت اصلی
+  const handleRemoveDiscount = () => {
+    setDiscountPercent('');
+    setFormData(prev => {
+      const originalPrice = prev.compareAtPrice || prev.price;
+      return {
+        ...prev,
+        price: originalPrice,
+        compareAtPrice: '',
+      };
+    });
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) newErrors.name = 'نام محصول الزامی است';
     if (!formData.sku.trim()) newErrors.sku = 'کد محصول (SKU) الزامی است';
     if (!formData.price || Number(formData.price) <= 0) newErrors.price = 'قیمت باید بیشتر از صفر باشد';
     if (formData.stock === '' || Number(formData.stock) < 0) newErrors.stock = 'موجودی نمی‌تواند منفی باشد';
+    if (formData.compareAtPrice && Number(formData.compareAtPrice) <= Number(formData.price)) {
+      newErrors.compareAtPrice = 'قیمت قبل از تخفیف باید از قیمت نهایی بیشتر باشد';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -105,8 +162,9 @@ export function AdminProductFormPage() {
       const payload = {
         ...formData,
         price: Number(formData.price),
+        compareAtPrice: formData.compareAtPrice ? Number(formData.compareAtPrice) : null,
         stock: Number(formData.stock),
-        lowStockThreshold: Number(formData.lowStockThreshold),
+        lowStockThreshold: formData.lowStockThreshold ? Number(formData.lowStockThreshold) : 5,
         categoryId: formData.categoryId || undefined,
         brandId: formData.brandId || undefined,
       };
@@ -304,25 +362,133 @@ export function AdminProductFormPage() {
 
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-card border border-border space-y-4">
-            <h3 className="text-lg font-semibold border-b border-border pb-2">قیمت و موجودی</h3>
+            <h3 className="text-lg font-semibold border-b border-border pb-2 flex items-center justify-between">
+              <span>قیمت و تخفیف</span>
+              {formData.compareAtPrice && Number(formData.compareAtPrice) > Number(formData.price) && (
+                <span className="bg-danger/10 text-danger text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Tag size={12} />
+                  {discountPercent ? `${discountPercent}٪ تخفیف` : 'تخفیف‌دار'}
+                </span>
+              )}
+            </h3>
             
+            {/* قیمت نهایی فروش */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">قیمت فروش (تومان) *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-text-secondary">قیمت فروش نهایی (تومان) *</label>
+                {formData.price && Number(formData.price) > 0 && (
+                  <span className="text-xs text-text-muted">
+                    {formatPrice(Number(formData.price))} تومان
+                  </span>
+                )}
+              </div>
               <input
                 required
                 type="number"
                 name="price"
                 value={formData.price}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  // اگر قیمت خط خورده داریم، درصد رو مجدد محاسبه کن
+                  const newPrice = Number(e.target.value);
+                  const compare = Number(formData.compareAtPrice);
+                  if (compare && compare > newPrice && newPrice > 0) {
+                    setDiscountPercent(String(Math.round(((compare - newPrice) / compare) * 100)));
+                  } else {
+                    setDiscountPercent('');
+                  }
+                }}
                 className={`w-full px-4 py-2 border rounded-input focus:border-gold outline-none ${errors.price ? 'border-danger' : 'border-border'}`}
                 dir="ltr"
+                placeholder="مثلا 1500000"
               />
               {errors.price && <p className="text-xs text-danger mt-1">{errors.price}</p>}
             </div>
+
+            {/* جعبه تنظیم تخفیف درصدی و قیمت قبل از تخفیف */}
+            <div className="p-3.5 bg-[#fbf9f4] border border-[#d9b869]/30 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#a67d34] flex items-center gap-1">
+                  <Percent size={14} /> تنظیم تخفیف درصدی
+                </span>
+                {(formData.compareAtPrice || discountPercent) && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveDiscount}
+                    className="text-[11px] text-danger hover:text-danger/80 flex items-center gap-1 font-medium"
+                  >
+                    <RotateCcw size={12} />
+                    حذف تخفیف
+                  </button>
+                )}
+              </div>
+
+              {/* کلیدهای سریع درصد تخفیف */}
+              <div className="flex flex-wrap gap-1.5">
+                {[5, 10, 15, 20, 25, 30, 40, 50].map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => handleApplyDiscountPercent(pct)}
+                    className={`px-2 py-1 text-xs rounded-lg border transition-all ${
+                      discountPercent === String(pct)
+                        ? 'bg-gold text-text-primary border-gold font-bold shadow-sm'
+                        : 'bg-white text-text-secondary border-border hover:border-gold/60'
+                    }`}
+                  >
+                    {pct}٪
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* ورودی درصد تخفیف دلخواه */}
+                <div>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">درصد تخفیف (٪)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={discountPercent}
+                    onChange={(e) => handleApplyDiscountPercent(e.target.value)}
+                    placeholder="مثلا 20"
+                    className="w-full px-3 py-1.5 text-sm bg-white border border-border rounded-input focus:border-gold outline-none"
+                    dir="ltr"
+                  />
+                </div>
+
+                {/* قیمت اصلی بدون تخفیف */}
+                <div>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">قیمت خط‌خورده (تومان)</label>
+                  <input
+                    type="number"
+                    name="compareAtPrice"
+                    value={formData.compareAtPrice}
+                    onChange={(e) => {
+                      handleChange(e);
+                      const compare = Number(e.target.value);
+                      const currentPrice = Number(formData.price);
+                      if (compare && currentPrice && compare > currentPrice) {
+                        setDiscountPercent(String(Math.round(((compare - currentPrice) / compare) * 100)));
+                      } else {
+                        setDiscountPercent('');
+                      }
+                    }}
+                    placeholder="قیمت قبل تخفیف"
+                    className={`w-full px-3 py-1.5 text-sm bg-white border rounded-input focus:border-gold outline-none ${
+                      errors.compareAtPrice ? 'border-danger' : 'border-border'
+                    }`}
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+              {errors.compareAtPrice && <p className="text-xs text-danger">{errors.compareAtPrice}</p>}
+            </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            {/* موجودی */}
+            <div className="grid grid-cols-2 gap-4 pt-1">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">موجودی *</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">موجودی انبار *</label>
                 <input
                   required
                   type="number"

@@ -25,3 +25,7 @@ repomix-output.xml
 *.sql
 uploads/
 abzaralat.gorgich/
+
+# Local & Server docker compose overrides
+docker-compose.override.yml
+docker-compose*.override.yml

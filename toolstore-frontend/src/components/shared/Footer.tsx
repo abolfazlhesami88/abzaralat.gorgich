@@ -118,30 +118,20 @@ export function Footer() {
             </div>
           </div>
 
-          {/* ستون ۳: خدمات مشتریان */}
+          {/* ستون ۳: درباره و تماس */}
           <div>
             <h4 className="font-bold text-sm text-[#f0e6cc] mb-4 relative pb-2.5 after:content-[''] after:absolute after:bottom-0 after:right-0 after:w-7 after:h-0.5 after:bg-gradient-to-r after:from-[#d9b869] after:to-transparent after:rounded-full">
-              خدمات مشتریان
+              خدمات و پشتیبانی
             </h4>
             <ul className="space-y-2.5 text-xs text-[#a89f8c]">
-              <li>
-                <Link to="/contact" className="hover:text-[#d9b869] transition-colors">
-                  تماس با ما
-                </Link>
-              </li>
               <li>
                 <Link to="/about" className="hover:text-[#d9b869] transition-colors">
                   درباره ما
                 </Link>
               </li>
               <li>
-                <Link to="/guarantee" className="hover:text-[#d9b869] transition-colors">
-                  گارانتی محصولات
-                </Link>
-              </li>
-              <li>
-                <Link to="/privacy" className="hover:text-[#d9b869] transition-colors">
-                  حریم خصوصی
+                <Link to="/contact" className="hover:text-[#d9b869] transition-colors">
+                  تماس با ما
                 </Link>
               </li>
             </ul>
@@ -150,7 +140,7 @@ export function Footer() {
           {/* ستون ۴: راهنمای خرید */}
           <div>
             <h4 className="font-bold text-sm text-[#f0e6cc] mb-4 relative pb-2.5 after:content-[''] after:absolute after:bottom-0 after:right-0 after:w-7 after:h-0.5 after:bg-gradient-to-r after:from-[#d9b869] after:to-transparent after:rounded-full">
-              راهنمای خرید
+              راهنمای مشتریان
             </h4>
             <ul className="space-y-2.5 text-xs text-[#a89f8c]">
               <li>
@@ -161,11 +151,6 @@ export function Footer() {
               <li>
                 <Link to="/shipping" className="hover:text-[#d9b869] transition-colors">
                   نحوه ارسال کالا
-                </Link>
-              </li>
-              <li>
-                <Link to="/returns" className="hover:text-[#d9b869] transition-colors">
-                  رویه بازگرداندن کالا
                 </Link>
               </li>
               <li>
